@@ -15,6 +15,14 @@ Tests use synthetic fixtures only. Never copy private runtime project data into 
 9. **Two-session reconciliation** — concurrent sessions merge without lost updates.
 10. **Schema migration** — each migration preserves routing and isolation invariants.
 
+## Current regression assets
+
+- `fixtures/synthetic-scenarios.md` — reusable synthetic cases.
+- `results/v0.1.0-static-regression.md` — current static consistency verdict for skill `0.1.0` / schema `1`.
+- `LIVE_CONCURRENCY_TEST.md` — required live two-session stale-SHA/reconciliation procedure.
+
 ## Acceptance rule
 
 Behavior-affecting skill changes should add or update a synthetic test scenario before release. Runtime schema migrations must define their own validation cases.
+
+A static PASS validates protocol consistency only. Concurrency is not considered live-validated until the live synthetic procedure passes with retained evidence.
