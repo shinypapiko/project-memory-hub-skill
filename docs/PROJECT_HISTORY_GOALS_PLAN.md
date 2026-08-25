@@ -1,12 +1,46 @@
+---
+document_role: non-normative-project-governance-index
+canonical_for:
+  - planning-status
+  - milestone-rollup
+  - open-architecture-questions
+  - project-history-rollup
+not_canonical_for:
+  - released-behavior
+  - release-history
+  - test-verdicts
+  - runtime-project-state
+architecture_state: proposed-unreleased
+runtime_load_policy: maintenance-only
+last_reviewed: 2026-08-26
+evidence_baseline:
+  - docs/audits/2026-08-local-project-memory-v1.1-audit-summary.md
+  - tests/results/v0.1.0-static-regression.md
+---
+
 # Project Memory Skill — History, Goals, Plan, and Status
 
-> Status: active planning document
->
-> This file is the persistent project-management record for the **Project Memory Skill / Hub integration effort**. It records history, goals, architectural direction, completed work, open questions, tasks, milestones, and acceptance criteria.
->
-> It is **not** the normative behavior contract. Normative behavior remains in `skill/SKILL.md` and the relevant policy/schema documents. When this plan and a released specification differ, the released specification wins until an explicit migration/release updates it.
+This file is the persistent **governance index and roadmap** for the Project Memory Skill / Hub integration effort.
 
-## 1. Project goal
+It is not a runtime memory file and must not be loaded during normal project startup. It is intended for Skill maintenance, architecture work, milestone review, and recovery of the development history.
+
+If this document conflicts with a released specification, release metadata, a test verdict, or runtime project state, the specialized source of truth wins.
+
+## 1. Source-of-truth map
+
+| Content | Canonical location |
+| --- | --- |
+| Planning status, milestone rollup, open design questions | this document |
+| Released Skill behavior | `skill/SKILL.md` plus normative policy/schema docs |
+| Version and release history | `VERSION`, `CHANGELOG.md`, Git tags/releases |
+| Test verdicts | `tests/results/` and executable test outputs |
+| Approved architecture decisions | dedicated ADR/decision records; this file keeps only rollup/linkage |
+| Runtime project state | workspace `.ai/` and/or Runtime Hub according to the released architecture |
+| Private project evidence | private workspace / Runtime Hub; never copied here merely for planning |
+
+Execution-task tracking must not be duplicated indefinitely between this file and GitHub Issues. Until a future decision changes it, **this file is the primary milestone/task rollup**; Issues may be used for implementation work but must link back to milestone IDs.
+
+## 2. Project goal
 
 Build one maintainable Project Memory system for ChatGPT/Codex-style agents that:
 
@@ -16,13 +50,59 @@ Build one maintainable Project Memory system for ChatGPT/Codex-style agents that
 - preserves experiment, decision, task, handoff, session, and provenance history;
 - supports deterministic multi-project routing and strict project isolation;
 - provides a low-frequency shared/durable Hub for cross-session, cross-agent, and cross-device coordination;
-- prevents stale sessions from silently overwriting newer shared state;
-- has one canonical source repository, explicit releases, migrations, executable validation, and regression tests;
+- prevents stale sessions from silently overwriting newer mutable state;
+- has one canonical release stream, explicit versioning/migrations, executable validation, and regression tests;
 - minimizes normal startup memory payload and avoids redundant local/remote injection.
 
-## 2. Current architectural direction
+## 3. Architecture states — do not conflate them
 
-The project is converging on a **single Skill with two memory domains**, not two competing Skills.
+Three different architecture states currently coexist. They are intentionally separated here.
+
+### 3.1 Current released Hub Protocol — `project-memory-hub-skill 0.1.0`
+
+Current released Hub behavior still defines the remote Hub project record as the authoritative project state for the Hub protocol. A substantive Hub session reads the selected remote `PROJECT.md`, records its blob SHA when available, and must refresh/reconcile before a shared write.
+
+Current canonical source scope:
+
+- repository: `shinypapiko/project-memory-hub-skill`
+- canonical **for**: Hub Protocol `0.1.x` reusable specification/templates/tests
+- supported Runtime Hub schema: `1`
+- not yet established as the final canonical repository for the future unified Project Memory Skill
+
+Maturity of the remote stale-SHA/reconciliation behavior:
+
+- `implementation_status: PROTOCOL_ONLY`
+- `validation_status: STATIC_VALIDATED`
+- `live_validation: PENDING`
+
+The protocol text and synthetic/static regression exist, but reusable Runtime Hub executable concurrency tooling is not yet implemented and the defined live two-agent concurrency test has not yet passed.
+
+### 3.2 Current deployed local `project-memory` implementation
+
+A strict read-only audit found a materially more mature local implementation with:
+
+- Codex implicit discovery metadata;
+- LOAD / RETRIEVE / CHECKPOINT workflows;
+- `.ai/PROJECT.md`, `CURRENT.md`, `INDEX.md`, `TASKS.md`;
+- indexed decisions and experiments;
+- handoff inbox/outbox/processed lifecycle;
+- optional sessions and research;
+- retrieval/write/schema/handoff/transport policies;
+- executable validation/status/ID tooling;
+- Git-backed mailbox/handoff/receipt/non-canonical snapshot transport;
+- executable smoke and transport E2E tests in the development distribution.
+
+Version wording must remain precise:
+
+> The audited development distribution and transport tool identify themselves as `1.1.0`; the installed Skill directories do not yet contain an independent Skill version marker.
+
+The installed and development/test Skill copies inspected by the audit were byte-for-byte identical at audit time.
+
+Evidence: `docs/audits/2026-08-local-project-memory-v1.1-audit-summary.md`.
+
+### 3.3 Target unified architecture — PROPOSED / UNRELEASED
+
+The project is converging on **one Skill with two memory domains**, not two competing Skills:
 
 ```text
                          Canonical Skill Source
@@ -40,198 +120,39 @@ The project is converging on a **single Skill with two memory domains**, not two
                     +--------- reconcile --------+
 ```
 
-### 2.1 Authority model
+This model is a planning target only. It does not override current released `0.1.0` Hub behavior or the current deployed local behavior until an explicit unified release/migration is approved.
 
-Authority is divided by scope rather than by declaring either local or remote storage globally superior.
+## 4. Proposed authority model — field-level map still pending
 
-| Information class | Intended authority |
-| --- | --- |
-| Source code, datasets, generated outputs, raw logs, direct experiment artifacts | Workspace evidence itself |
-| Active objective, current route, latest local result, immediate blockers, near-term actions | local `.ai/CURRENT.md` |
-| Detailed project tasks, experiments, decisions, handoffs, local sessions, local research | local `.ai/` records and indexes |
-| Shared project identity and last stable cross-agent checkpoint | Hub `projects/<project-id>/PROJECT.md` |
-| Cross-project/project registry and workspace routing | Hub `projects/INDEX.md` |
-| Important shared session trace | Hub `projects/<project-id>/sessions/` |
-| Reusable cross-project findings / consequential cross-project decisions | Hub shared `research/` / `decisions/` when explicitly promoted |
+Authority is intended to be divided by information class and scope rather than by declaring local or remote storage globally superior.
 
-The key rule is:
+| Information class / record | Proposed owner / role | Publication direction |
+| --- | --- | --- |
+| Source code, datasets, generated outputs, raw logs, direct experiment artifacts | workspace evidence itself | never replaced by memory summaries |
+| `AGENTS.md` binding metadata | workspace binding for Skill/project identity | may reference stable `project_id` / Hub entry; not a project-state transcript |
+| local `.ai/PROJECT.md` | stable local project background, constraints, terminology, repository map | exact field mapping to Hub remains M1.2 |
+| local `.ai/CURRENT.md` | authoritative active-work state for the local workspace | promoted selectively, never mirrored automatically |
+| local `.ai/TASKS.md`, DEC/EXP/handoffs/local sessions/research | detailed local lifecycle/evidence | local by default; promote conclusions only when policy requires |
+| Hub `projects/<project-id>/PROJECT.md` | proposed shared stable checkpoint for other agents/devices | milestone/shared-state publication only |
+| Hub `projects/INDEX.md` | cross-project identity/routing registry | Hub-only routing role; not equivalent to local `.ai/INDEX.md` |
+| Hub per-project `sessions/` | important shared session trace | only when cross-session traceability justifies publication |
+| Hub shared `research/` / `decisions/` | explicitly promoted reusable/cross-project material | promotion requires scope/applicability metadata |
+
+Planning principle:
 
 > **Evidence and scope determine authority; neither local nor remote storage wins merely because of location.**
 
-### 2.2 Frequency model
+The table above is not yet sufficient for implementation. M1.2 must define field-level ownership, readers/writers, publication direction, privacy class, conflict behavior, provenance, and retention.
 
-- **Local memory is high-frequency.** Codex may update local working-memory records after ordinary substantive tasks and experiments.
-- **Hub memory is low-frequency.** The Hub should receive stable milestones, shared blockers, adopted technical routes, handoff-worthy state, and other information that another agent/device genuinely needs.
+## 5. Frequency and retrieval model — proposed
+
+- Local memory is high-frequency.
+- Hub memory is low-frequency.
 - Detailed `EXP-*`, local decision mechanics, transient debugging, and every task result must not be copied automatically into the Hub.
+- Normal healthy local startup should eventually use local LOAD plus a lightweight Hub change check, not unconditional remote full-text injection.
+- Full Hub routing/recovery remains necessary for web-only agents, new devices, missing/untrusted local memory, schema mismatch, remote changes, or explicit recovery/current-state requests.
 
-## 3. What exists today
-
-### 3.1 Existing local `project-memory` implementation
-
-A deployed local implementation identified during the read-only audit is materially more mature than the initial Hub Skill reference implementation.
-
-Audited reusable capabilities include:
-
-- implicit Codex discovery metadata;
-- LOAD / RETRIEVE / CHECKPOINT workflows;
-- local `.ai/` schema with `PROJECT.md`, `CURRENT.md`, `INDEX.md`, `TASKS.md`;
-- indexed decisions and experiments;
-- handoff inbox/outbox/processed lifecycle;
-- optional sessions and research;
-- retrieval, write, handoff, transport, schema, and architecture policies;
-- `memory_tool.py` validation/status/ID-allocation tooling;
-- `transport_tool.py` mailbox/receipt/snapshot transport with defensive Git/hash checks;
-- executable smoke and transport E2E tests.
-
-The installed and development/test copies inspected by the audit were byte-for-byte identical at audit time. The audit found local implementation version `1.1.0` through repository/tool version markers.
-
-### 3.2 `project-memory-hub-skill`
-
-Current public source repository release:
-
-- Skill version: `0.1.0`
-- Supported Hub schema: `1`
-- Status: early reference implementation
-
-Implemented protocol concepts include:
-
-- deterministic workspace → `project_id` routing;
-- strict project isolation;
-- remote project registry;
-- bound-workspace lifecycle and fresh-chat round-trip validation;
-- Hub `PROJECT.md` and optional Hub session logs;
-- blob-SHA pre-write refresh;
-- optimistic stale-session reconciliation;
-- runtime schema/version/migration model;
-- synthetic protocol tests and a defined live-concurrency test procedure.
-
-### 3.3 Runtime Hub
-
-The current Runtime Hub uses `hub_schema_version: 1` and already supports:
-
-- `START_HERE.md` routing/protocol entry;
-- `projects/INDEX.md` as the sole remote project registry;
-- isolated per-project `PROJECT.md` records;
-- optional durable `sessions/`;
-- pre-write refresh and stale-SHA handling;
-- shared research/decision areas;
-- fresh-chat round-trip validation for bound workspaces.
-
-### 3.4 Existing transport
-
-The local `transport_tool.py` is **not** the same thing as a Hub synchronization adapter.
-
-Its current semantics are mailbox/handoff/receipt/non-canonical snapshot exchange. In particular, its CURRENT snapshot is explicitly non-canonical. It should not be silently repurposed into authoritative Hub synchronization.
-
-## 4. Important history
-
-### Stage H0 — local project-memory system created
-
-A local file-based Project Memory system was built around `.ai/`, Markdown, Git-aware helper scripts, retrieval/write policies, experiments, decisions, and handoffs. It became the practical high-frequency memory used by Codex.
-
-### Stage H1 — multi-project Runtime Hub introduced
-
-A separate GitHub Runtime Hub was introduced to solve problems the local single-project memory did not target directly:
-
-- deterministic workspace/project identity;
-- cross-workspace project isolation;
-- shared durable state across ChatGPT/Codex/devices;
-- fresh-session recovery through a remote record;
-- remote optimistic-concurrency protection.
-
-### Stage H2 — Hub Skill source repository created
-
-`project-memory-hub-skill` was created so Hub protocol, templates, tests, migration rules, and release history could be maintained independently from runtime project data. Version `0.1.0` was established as an early reference implementation supporting Hub schema 1.
-
-### Stage H3 — session and remote concurrency protocol added
-
-The Hub protocol added:
-
-- session logs;
-- `base_project_sha` semantics;
-- mandatory remote pre-write refresh;
-- stale-session detection;
-- reconcile-before-write rules.
-
-This remains an important design direction.
-
-### Stage H4 — real use exposed local/remote duplication
-
-Real Codex usage showed that local `.ai/` is updated more frequently and at finer granularity than the Hub. Loading local `CURRENT/INDEX` and then unconditionally loading remote `PROJECT.md` can duplicate state and waste context.
-
-This produced the Hot/Durable direction:
-
-- local `.ai/` = working/hot memory + detailed evidence;
-- Hub = shared durable checkpoint + routing/coordination;
-- remote full reads should eventually become lazy/conditional rather than unconditional.
-
-### Stage H5 — strict read-only audit performed
-
-A read-only audit compared the deployed local implementation, its development copy, `project-memory-hub-skill`, the Hub protocol, and a representative `.ai/` schema.
-
-Key findings:
-
-1. The local implementation already contains many capabilities that must not be reimplemented independently in the Hub Skill.
-2. The Hub has important unique capabilities: multi-project routing, remote shared checkpointing, remote stale-SHA concurrency, schema/migration rules.
-3. If both systems independently declare overlapping `PROJECT/CURRENT` state canonical, a dual-source-of-truth problem results.
-4. The correct next step is **unification/design**, not immediate `0.2.0` feature implementation.
-
-## 5. Decisions already considered stable enough for planning
-
-These are planning-level decisions. They become normative only when incorporated into released specifications.
-
-### D-P1 — Do not build a second local-memory implementation
-
-Reuse and productize the existing local `project-memory` core instead of recreating LOAD/RETRIEVE/CHECKPOINT, experiment, decision, handoff, indexing, and local validation behavior in parallel.
-
-### D-P2 — Keep the Hub, but narrow its role
-
-The Hub remains valuable for:
-
-- project registry and routing;
-- shared stable checkpoint;
-- cross-agent/device coordination;
-- important shared session trace;
-- remote optimistic concurrency;
-- migration/version compatibility.
-
-It should not mirror every local experiment or every change to hot working state.
-
-### D-P3 — Pre-write refresh remains mandatory
-
-The earlier concurrency principle remains valid and should be generalized:
-
-> **Before writing any shared mutable state, re-read/re-check the latest state and reconcile changes rather than blindly overwriting.**
-
-For remote Hub files this uses blob SHAs when available. Local multi-session concurrency requires an equivalent local-safe-write design and must be specified/tested before being claimed solved.
-
-### D-P4 — One canonical Skill source is required
-
-Long-term, installed Skill copies must come from one source-controlled release stream. Maintaining multiple manually synchronized behavior implementations is not acceptable.
-
-### D-P5 — Existing transport and future Hub adapter are different layers
-
-Mailbox/handoff transport may remain a component, but Hub synchronization must have separate semantics and must not inherit the non-canonical snapshot model by accident.
-
-## 6. Open design questions
-
-These must be resolved before implementation/migration begins.
-
-- Which repository becomes the final canonical Skill source, and should the current repository eventually be renamed?
-- What exact subset of the local `1.1.0` implementation is migrated into source control first?
-- What is the precise boundary between local `.ai/PROJECT.md` and Hub `PROJECT.md`?
-- Should local `.ai/PROJECT.md` remain stable identity/constraints while Hub `PROJECT.md` becomes a compact shared checkpoint, or should one be renamed/restructured during a future migration?
-- What metadata records the last reconciled Hub state (`hub_project_sha`, sync time, schema, remote path)?
-- What is the correct local concurrency primitive when several Codex sessions write the same `.ai/CURRENT.md` or index?
-- How are conflicts represented when local and remote both changed since the last reconciliation?
-- Which local records are never allowed to leave the workspace?
-- What is the exact milestone/publish trigger for a Hub update?
-- How should web ChatGPT, which may not have local filesystem access, recover enough context without making local state remote-canonical?
-- What are the performance budgets for startup, retrieval, Hub probes, and Hub compaction?
-
-## 7. Target operating model
-
-### 7.1 Normal bound local session — target fast path
+Target normal path:
 
 ```text
 AGENTS / Skill discovery
@@ -247,214 +168,202 @@ remote unchanged?
    └─ no  → fetch changed shared state → reconcile → continue
 ```
 
-This is a **target**, not current released `0.1.0` behavior.
+This is proposed, not current released behavior.
 
-### 7.2 Remote/recovery path
+## 6. Maturity vocabulary
 
-Use the full Hub routing/recovery path when local memory is unavailable or cannot be trusted, including cases such as:
+Do not use one ladder that confuses implementation with validation. Track them independently.
 
-- new device;
-- missing `.ai/`;
-- unbound workspace;
-- web-only agent without local filesystem access;
-- schema mismatch;
-- remote/shared state changed;
-- explicit request for current Hub state;
-- suspected conflict.
+### Implementation status
 
-### 7.3 Write path
+- `PROTOCOL_ONLY` — behavior exists as specification/templates/policy only.
+- `EXECUTABLE` — reusable implementation code exists for the behavior.
 
-```text
-substantive task
-    ↓
-local checkpoint as appropriate
-    ↓
-Does this change shared durable state?
-   ├─ no  → remain local
-   └─ yes → pre-write remote refresh
-             ↓
-          unchanged?
-          ├─ yes → publish compact shared checkpoint
-          └─ no  → reconcile local + remote + evidence, then publish
-```
+### Validation status
 
-## 8. Performance targets
+- `UNVALIDATED` — no recorded validation result.
+- `STATIC_VALIDATED` — specification/static/synthetic consistency validated.
+- `LIVE_VALIDATED` — representative live behavior executed successfully.
 
-These are engineering targets, not release guarantees yet.
+A capability may be `EXECUTABLE` but not `LIVE_VALIDATED`, or `PROTOCOL_ONLY` yet have a manually executed live validation. Record both dimensions where maturity matters.
 
-### P1 — normal startup memory payload
+## 7. Important history
 
-Target approximately **1k–2k tokens of memory payload** for a healthy bound local workspace under the normal fast path.
+- **H0 — local Project Memory created.** `.ai/`, Markdown, retrieval/write policies, experiments, decisions, handoffs, and helper scripts became the practical local memory used by Codex.
+- **H1 — Runtime Hub introduced.** Added deterministic workspace/project identity, multi-project isolation, remote shared state, and remote coordination concepts.
+- **H2 — Hub Skill source repo created.** `project-memory-hub-skill 0.1.0` became the canonical reusable source for Hub Protocol `0.1.x` / schema-1 compatibility.
+- **H3 — session / remote concurrency protocol added.** Session logs, `base_project_sha`, pre-write refresh, stale detection, and reconcile-before-write were specified.
+- **H4 — real usage exposed duplication.** Local `.ai` proved faster-moving and more detailed than remote Hub state; unconditional dual loading created redundant context.
+- **H5 — strict read-only audit completed.** Confirmed the local implementation already contains many features that must not be reimplemented independently; identified dual-authority risk and the need for unification before `0.2.0` implementation.
+- **H6 — governance review.** The project-management document itself was corrected so proposed architecture, released behavior, maturity, evidence, and runtime state cannot silently become a second specification/source of truth.
 
-This budget applies to memory injected by the Skill, not to system prompts, tool wrappers, user input, or model-internal context.
+## 8. Planning decisions
 
-### P2 — selective retrieval
+These are planning-level decisions only. When approved as architecture, promote them to dedicated ADR/decision files and leave only a rollup here.
 
-Detailed history must be loaded only when relevant:
+- **D-P1 — Do not build a second local-memory implementation.** Reuse/productize the existing local core.
+- **D-P2 — Keep the Hub, but narrow its proposed unified role.** Registry/routing, shared checkpoint, cross-agent/device coordination, shared trace, remote concurrency, compatibility/migration.
+- **D-P3 — Pre-write refresh remains mandatory.** Before writing shared mutable state, re-read/re-check latest state and reconcile rather than blindly overwrite. Remote Hub uses blob SHA where available; local multi-session semantics still need executable design/tests.
+- **D-P4 — One canonical Skill release stream is required.** Manually synchronized installed/dev behavior copies are not acceptable long term.
+- **D-P5 — Existing transport and future Hub adapter are separate semantic layers.** Mailbox/handoff/receipt/non-canonical snapshot behavior must not silently become authoritative Hub synchronization.
 
-- read index first;
-- load one or a few matching DEC/EXP/session/research records;
-- fall back to broader evidence only if uncertainty remains.
+## 9. Open architecture questions
 
-### P3 — remote project compactness
+Resolve before migration/implementation:
 
-Hub `PROJECT.md` should remain a compact shared checkpoint. When detailed history causes growth, move detail to session/research/decision records and compact the checkpoint without losing provenance.
+- Which repository becomes the canonical source for the **future unified** Skill?
+- What reusable subset of the audited local distribution is imported first?
+- What is the field-level boundary between `.ai/PROJECT.md`, `.ai/CURRENT.md`, and Hub `PROJECT.md`?
+- What metadata records the last fully reconciled Hub state (`hub_project_sha` or equivalent)?
+- What local concurrency primitive prevents lost updates when several Codex sessions write `.ai/CURRENT.md` / indexes?
+- How are three-way local/remote conflicts represented and reconciled?
+- Which local information classes are never publishable?
+- What exact milestone/shared-state trigger causes a Hub publication?
+- How does web/new-device recovery hydrate context without making local active state remote-canonical?
+- What startup/retrieval/Hub-probe/compaction budgets are realistic?
 
-A concrete soft token/byte threshold still needs to be defined and tested.
+## 10. Performance targets — engineering targets, not guarantees
 
-## 9. Work breakdown
+- Normal healthy bound-local startup: approximately **1k–2k tokens of Skill memory payload**.
+- Selective retrieval: index first, then only one/few relevant DEC/EXP/session/research records, broader evidence only if uncertainty remains.
+- Hub `PROJECT.md`: compact shared checkpoint; detailed history belongs in linked records. Concrete soft byte/token threshold remains to be measured.
 
-Status values:
+## 11. Work breakdown
 
-- `DONE` — completed and evidence exists;
-- `ACTIVE` — current design work;
-- `PLANNED` — accepted direction, not started;
-- `BLOCKED` — requires a prior decision/test;
-- `DEFERRED` — intentionally postponed;
-- `REJECTED` — should not be implemented in the proposed form.
+Status values are only `DONE`, `ACTIVE`, `PLANNED`, `BLOCKED`, `DEFERRED`, `REJECTED`. Do not encode maturity/dependency explanations inside Status.
 
-### Milestone M0 — establish evidence baseline
+### M0 — evidence baseline
 
-| ID | Task | Status |
-| --- | --- | --- |
-| M0.1 | Create Runtime Hub with deterministic project routing/isolation | DONE |
-| M0.2 | Validate fresh-chat round trip on real bound workspaces | DONE |
-| M0.3 | Add Hub session log schema and remote stale-SHA protocol | DONE |
-| M0.4 | Create source-controlled `project-memory-hub-skill` reference repo | DONE |
-| M0.5 | Establish Skill `0.1.0` / Hub schema 1 compatibility model | DONE |
-| M0.6 | Perform strict read-only audit of existing local `project-memory` implementation | DONE |
-| M0.7 | Identify duplicate-source-of-truth risk | DONE |
+| ID | Deliverable | Status | Depends on | Acceptance | Evidence | Last verified |
+| --- | --- | --- | --- | --- | --- | --- |
+| M0.1 | Runtime Hub routing/isolation baseline exists | DONE | — | deterministic single-project routing + isolation specified in schema-1 runtime | Runtime Hub `START_HERE.md`, `projects/INDEX.md`, `HUB_SCHEMA.md` | 2026-08-26 |
+| M0.2 | Fresh-chat round trip demonstrated on real bound workspaces | DONE | M0.1 | fresh chat derives binding, reads correct project, performs scoped write-back | private Runtime Hub round-trip challenge/response artifacts | 2026-08-26 |
+| M0.3 | Remote session/stale-SHA protocol specified | DONE | M0.1 | pre-write refresh, stale detection, reconcile-before-write documented | `docs/concurrency.md`, `prompts/session-protocol.md`, `tests/results/v0.1.0-static-regression.md` | 2026-08-26 |
+| M0.4 | Hub Skill reference source repository created | DONE | — | source-controlled Hub protocol/templates/tests/versioning exist | `VERSION`, `CHANGELOG.md`, `skill/SKILL.md` | 2026-08-26 |
+| M0.5 | Hub Skill `0.1.0` / Hub schema 1 compatibility defined | DONE | M0.4 | release/schema compatibility is explicit | `VERSION`, `docs/compatibility.md`, Runtime Hub `HUB_SCHEMA.md` | 2026-08-26 |
+| M0.6 | Existing local implementation audited read-only | DONE | — | reusable behavior, schema, tooling, transport, version provenance, gaps recorded without mutation | `docs/audits/2026-08-local-project-memory-v1.1-audit-summary.md` | 2026-08-26 |
+| M0.7 | Dual-source-of-truth risk identified | DONE | M0.6 | conflicting authority surfaces and non-equivalent indexes/snapshots documented | audit summary + this governance review | 2026-08-26 |
 
-### Milestone M1 — unified architecture specification
+### M1 — unified architecture specification
 
-| ID | Task | Status |
-| --- | --- | --- |
-| M1.1 | Define final authority model by information scope | ACTIVE |
-| M1.2 | Define local-memory vs Hub-checkpoint boundary field-by-field | PLANNED |
-| M1.3 | Define local multi-session pre-write refresh/conflict semantics | PLANNED |
-| M1.4 | Define remote pre-write refresh/reconciliation semantics after unification | PLANNED |
-| M1.5 | Define Hub adapter vs existing transport boundary | PLANNED |
-| M1.6 | Define privacy / never-publish classes | PLANNED |
-| M1.7 | Define normal fast path vs recovery path | PLANNED |
-| M1.8 | Define memory payload and compaction budgets | PLANNED |
-| M1.9 | Approve a Unified Architecture Proposal before code migration | BLOCKED on M1.1–M1.8 |
+| ID | Deliverable | Status | Depends on | Acceptance | Evidence | Last verified |
+| --- | --- | --- | --- | --- | --- | --- |
+| M1.1 | Authority model by information scope | ACTIVE | M0 | every information class has one explicit owner/role | proposed map in §4; requires approval/ADR | 2026-08-26 |
+| M1.2 | Field-level local/Hub mapping | PLANNED | M1.1 | owner, writer, readers, publish direction, conflict rule, provenance, privacy, retention defined | — | — |
+| M1.3 | Local multi-session safe-write semantics | PLANNED | M1.2 | lost-update prevention specified for shared local mutable files | — | — |
+| M1.4 | Unified remote refresh/reconcile semantics | PLANNED | M1.2 | three-way/local-remote behavior deterministic | — | — |
+| M1.5 | Hub adapter vs transport boundary | PLANNED | M0.6 | mailbox/snapshot semantics cannot be confused with Hub checkpoint sync | — | — |
+| M1.6 | Privacy / never-publish classes | PLANNED | M1.2 | every publishable class has explicit privacy rule | — | — |
+| M1.7 | Normal fast path vs recovery path | PLANNED | M1.2 | conditions and fallbacks explicit | — | — |
+| M1.8 | Memory payload / compaction budgets | PLANNED | M1.7 | measurable budgets and thresholds defined | — | — |
+| M1.9 | Unified Architecture Proposal approved | BLOCKED | M1.1–M1.8 | approved ADR/spec before source migration | — | — |
 
-### Milestone M2 — canonical source and version model
+### M2 — canonical source and version model
 
-| ID | Task | Status |
-| --- | --- | --- |
-| M2.1 | Decide canonical source repository name/location | PLANNED |
-| M2.2 | Import reusable local v1.1 implementation without user/project data | BLOCKED on M1.9 |
-| M2.3 | Preserve/port implicit Codex discovery metadata | BLOCKED on M2.2 |
-| M2.4 | Port local executable tests and validation tools | BLOCKED on M2.2 |
-| M2.5 | Define version mapping from local 1.1.0 and Hub Skill 0.1.0 to unified releases | PLANNED |
-| M2.6 | Define installation/update procedure so installed/dev copies derive from releases | PLANNED |
+| ID | Deliverable | Status | Depends on | Acceptance | Evidence | Last verified |
+| --- | --- | --- | --- | --- | --- | --- |
+| M2.1 | Decide future unified canonical source repo | PLANNED | M1.9 | repo/name/ownership/release scope explicit | current repo remains canonical only for Hub Protocol `0.1.x` | — |
+| M2.2 | Import reusable local implementation without project/user data | BLOCKED | M1.9, M2.1 | reusable core appears in canonical source with privacy review | — | — |
+| M2.3 | Preserve Codex discovery metadata | BLOCKED | M2.2 | installed release remains discoverable/implicit where intended | — | — |
+| M2.4 | Port executable tests/validation | BLOCKED | M2.2 | local smoke/E2E/validation capabilities run from canonical source | — | — |
+| M2.5 | Define unified version lineage | PLANNED | M1.9 | local distribution `1.1.0` provenance and Hub `0.1.0` lineage mapped without pretending direct semver continuity | — | — |
+| M2.6 | Add independent installed-Skill version metadata and release-based install/update | PLANNED | M2.1–M2.5 | installed Skill version can be verified without relying on outer repo/tool marker | — | — |
 
-### Milestone M3 — Hub adapter and lazy synchronization
+### M3 — Hub adapter and lazy synchronization
 
-| ID | Task | Status |
-| --- | --- | --- |
-| M3.1 | Define sync metadata schema (`hub_project_sha` or equivalent) | PLANNED |
-| M3.2 | Define “last reconciled SHA” semantics precisely | PLANNED |
-| M3.3 | Implement lightweight remote-change probe | BLOCKED on M2 |
-| M3.4 | Implement unchanged-remote fast path | BLOCKED on M3.3 |
-| M3.5 | Implement changed-remote fetch + reconcile path | BLOCKED on M3.1–M3.3 |
-| M3.6 | Implement milestone/shared-checkpoint publication rules | BLOCKED on M1.2/M1.6 |
-| M3.7 | Keep detailed local EXP/DEC/task records local by default | PLANNED |
-| M3.8 | Define web/new-device hydration behavior | PLANNED |
+| ID | Deliverable | Status | Depends on | Acceptance | Evidence | Last verified |
+| --- | --- | --- | --- | --- | --- | --- |
+| M3.1 | Sync metadata schema | PLANNED | M1.2 | last-reconciled remote identity/SHA/schema/path semantics explicit | — | — |
+| M3.2 | Last-reconciled SHA semantics | PLANNED | M3.1 | distinguishes merely observed remote SHA from fully reconciled state | — | — |
+| M3.3 | Lightweight remote-change probe | BLOCKED | M2, M3.1 | detects changed shared checkpoint without full payload injection | — | — |
+| M3.4 | Unchanged-remote fast path | BLOCKED | M3.3 | full Hub project read skipped safely when unchanged | — | — |
+| M3.5 | Changed-remote fetch/reconcile path | BLOCKED | M3.1–M3.3, M1.4 | preserves compatible local + remote work, surfaces conflicts | — | — |
+| M3.6 | Milestone/shared-checkpoint publication | BLOCKED | M1.2, M1.6 | explicit promotion trigger and compact payload | — | — |
+| M3.7 | Local detailed evidence stays local by default | PLANNED | M1.6 | EXP/DEC/task details are never bulk mirrored implicitly | — | — |
+| M3.8 | Web/new-device hydration | PLANNED | M1.7 | recovery works without local filesystem access | — | — |
 
-### Milestone M4 — concurrency hardening
+### M4 — concurrency hardening
 
-| ID | Task | Status |
-| --- | --- | --- |
-| M4.1 | Remote Hub blob-SHA stale-write detection | DONE at protocol level |
-| M4.2 | Execute live two-session remote concurrency test | PLANNED |
-| M4.3 | Design safe concurrent writes to local `.ai/CURRENT.md` / indexes | PLANNED |
-| M4.4 | Add executable local multi-session conflict tests | BLOCKED on M4.3 |
-| M4.5 | Add local-vs-remote divergence synthetic tests | PLANNED |
-| M4.6 | Add three-session stress scenario | PLANNED |
-| M4.7 | Verify no lost update under compatible concurrent changes | BLOCKED on M4.2/M4.4/M4.5 |
+| ID | Deliverable | Status | Depends on | Acceptance | Evidence | Last verified |
+| --- | --- | --- | --- | --- | --- | --- |
+| M4.1a | Remote stale-SHA protocol specified/static-validated | DONE | M0.3 | protocol consistency passes static regression | `tests/results/v0.1.0-static-regression.md` | 2026-08-26 |
+| M4.1b | Remote stale-SHA behavior live-validated | PLANNED | M4.1a | defined two-session live test passes | `tests/LIVE_CONCURRENCY_TEST.md` (procedure only) | — |
+| M4.2 | Local safe concurrent-write design | PLANNED | M1.3 | CURRENT/index shared writes have deterministic no-lost-update semantics | — | — |
+| M4.3 | Executable local multi-session conflict tests | BLOCKED | M4.2 | controlled concurrent fixtures pass | — | — |
+| M4.4 | Local-vs-remote divergence tests | PLANNED | M1.4, M3 | compatible and conflicting branches behave as specified | — | — |
+| M4.5 | Three-session stress scenario | PLANNED | M4.3, M4.4 | A/B/C concurrent compatible updates produce no lost update | — | — |
 
-### Milestone M5 — migration and compatibility
+### M5 — migration and compatibility
 
-| ID | Task | Status |
-| --- | --- | --- |
-| M5.1 | Define migration for existing local `.ai/` trees | BLOCKED on M1/M2 |
-| M5.2 | Define migration for already bound Hub projects | BLOCKED on M1/M2 |
-| M5.3 | Ensure migration does not copy project-private evidence into public source | PLANNED |
-| M5.4 | Preserve pre-existing `AGENTS.md` instructions | DONE as existing invariant; retest required |
-| M5.5 | Define rollback and pre-upgrade checkpoint procedure | PLANNED |
-| M5.6 | Run migration on synthetic fixtures before any real project | PLANNED |
+| ID | Deliverable | Status | Depends on | Acceptance | Evidence | Last verified |
+| --- | --- | --- | --- | --- | --- | --- |
+| M5.1 | Existing `.ai/` migration plan | BLOCKED | M1, M2 | no existing local evidence is silently lost/reclassified | — | — |
+| M5.2 | Existing bound-Hub project migration plan | BLOCKED | M1, M2 | routing/round-trip compatibility preserved | — | — |
+| M5.3 | Migration privacy guarantee | PLANNED | M1.6 | no private project evidence copied into public Skill source | — | — |
+| M5.4a | Existing local installer preserves unrelated `AGENTS.md` instructions | DONE | — | existing behavior evidenced by audit/test coverage | sanitized audit summary; existing local smoke-test coverage reported | 2026-08-26 |
+| M5.4b | Unified migration preserves unrelated `AGENTS.md` instructions | PLANNED | M5.1, M5.2 | synthetic migration proves preservation after unification | — | — |
+| M5.5 | Rollback / pre-upgrade checkpoint | PLANNED | M5.1, M5.2 | rollback target and procedure explicit | — | — |
+| M5.6 | Synthetic migration before real project | PLANNED | M5.1–M5.5 | synthetic fixtures pass before any real migration | — | — |
 
-### Milestone M6 — validation and release
+### M6 — validation and release
 
-| ID | Task | Status |
-| --- | --- | --- |
-| M6.1 | Executable smoke tests for unified install | PLANNED |
-| M6.2 | Executable retrieval/write/experiment/decision tests | PLANNED |
-| M6.3 | Executable Hub adapter tests | PLANNED |
-| M6.4 | Live remote concurrency test | PLANNED |
-| M6.5 | Token/startup payload benchmark | PLANNED |
-| M6.6 | Fresh-chat round trip after behavior-affecting release | PLANNED |
-| M6.7 | Release only after migration/rollback documentation is complete | BLOCKED on M5/M6 |
+| ID | Deliverable | Status | Depends on | Acceptance | Evidence | Last verified |
+| --- | --- | --- | --- | --- | --- | --- |
+| M6.1 | Unified install smoke tests | PLANNED | M2, M5 | install/update/idempotence/discovery pass | — | — |
+| M6.2 | Retrieval/write/EXP/DEC executable tests | PLANNED | M2 | local core behavior preserved | — | — |
+| M6.3 | Hub adapter executable tests | PLANNED | M3 | probe/reconcile/publish/error paths pass | — | — |
+| M6.4 | Live remote concurrency | PLANNED | M4 | two-session live validation passes | — | — |
+| M6.5 | Token/startup benchmark | PLANNED | M3 | measured normal payload meets/adjusts target | — | — |
+| M6.6 | Fresh-chat round trip after behavior-affecting release | PLANNED | M5, M6 | upgraded bound workspace passes scoped round trip | — | — |
+| M6.7 | Release gate | BLOCKED | M5, M6 | architecture, migration, executable tests, rollback, compatibility metadata complete | — | — |
 
-## 10. Explicitly rejected or paused implementation directions
+## 12. Explicitly rejected or paused directions
 
-The following should **not** proceed unless this plan is intentionally revised:
+- `REJECTED` — build another independent local `.ai` schema inside the Hub Skill.
+- `REJECTED` — automatically copy every local `EXP-*` into Hub `PROJECT.md`.
+- `REJECTED` — treat existing transport CURRENT snapshots as authoritative Hub state.
+- `REJECTED` — blindly allow remote Hub state to overwrite newer local active-work evidence.
+- `REJECTED` — blindly allow local active state to overwrite newer shared Hub state.
+- `PAUSED` — nominal `0.2.0` implementation before the unified architecture/source model is approved.
+- `PAUSED` — migrate real `.ai/` trees before synthetic migration/rollback tests exist.
 
-- `REJECTED` — building another independent local `.ai` schema inside the Hub Skill;
-- `REJECTED` — automatically copying every local `EXP-*` into Hub `PROJECT.md`;
-- `REJECTED` — treating existing transport CURRENT snapshots as authoritative Hub state;
-- `REJECTED` — blindly allowing Hub `PROJECT.md` to overwrite newer local active-work evidence;
-- `REJECTED` — blindly allowing local active state to overwrite newer shared Hub state;
-- `PAUSED` — releasing a nominal Hub Skill `0.2.0` before the unified architecture/source-of-truth design is approved;
-- `PAUSED` — migrating current real `.ai/` trees into a new schema before synthetic migration tests exist.
+## 13. Unified architecture acceptance criteria
 
-## 11. Acceptance criteria for the unified architecture
+Implementation may begin only when:
 
-The architecture is ready for implementation only when all of the following are explicit:
+1. the future unified canonical source repository/release stream is explicit;
+2. each information class has one unambiguous authority role;
+3. field-level local/Hub mapping prevents silent dual authority;
+4. local and remote pre-write refresh semantics are specified;
+5. local/remote divergence has deterministic reconciliation behavior;
+6. detailed experiments/transient work are not automatically promoted;
+7. privacy / never-publish classes are explicit;
+8. normal local startup can safely skip unchanged remote full reads;
+9. web/new-device/recovery paths remain possible;
+10. executable tests cover core local behavior, routing/isolation, adapter behavior, migration, and concurrency;
+11. rollback exists;
+12. memory/token payload is measured.
 
-1. one canonical source repository for Skill code/policies/templates/tests;
-2. one unambiguous authority owner for every information class;
-3. no file pair can both silently claim authority over the same semantic state;
-4. local and remote pre-write refresh rules are specified;
-5. local/remote divergence has a deterministic reconciliation procedure;
-6. detailed experiments and transient work are not automatically promoted to shared state;
-7. privacy boundaries and never-publish records are defined;
-8. normal local startup can avoid a full remote project read when safely unchanged;
-9. recovery/new-device/web paths remain possible without local state;
-10. executable tests cover routing, isolation, retrieval, checkpointing, migration, and concurrency;
-11. a rollback path exists for upgrades;
-12. token/memory payload is measured rather than assumed.
+## 14. Release gate
 
-## 12. Release gate
+A behavior-affecting unified release is not complete merely because Markdown protocols changed. It requires:
 
-Do **not** call the next implementation release complete merely because Markdown protocols are updated.
-
-A behavior-affecting unified release requires:
-
-- approved architecture;
-- source migration/import completed;
+- approved architecture/ADR;
+- canonical source migration/import;
 - executable tests passing;
 - synthetic migration passing;
-- live remote-concurrency validation;
+- live remote concurrency validation;
 - representative local multi-session validation;
-- fresh-chat round-trip after upgrade;
+- fresh-chat round trip after upgrade;
 - documented rollback;
-- version and compatibility metadata updated.
+- version / compatibility metadata updated.
 
-## 13. Maintenance rules for this document
+## 15. Maintenance rules
 
-Update this file when any of the following occurs:
+Update this governance index when architecture direction, planning decisions, milestone status, audits, migrations/releases, assumptions, or blockers materially change.
 
-- architecture direction changes;
-- a planning decision becomes normative;
-- a milestone/task changes status;
-- a new audit materially changes understanding;
-- a migration/release is completed;
-- an assumption is invalidated;
-- a new blocker is discovered.
+Do not use it as a transcript or a runtime LOAD input.
 
-Do not use this document as a transcript. Preserve only history and planning information that affects implementation, maintenance, or future decisions.
+When a planning decision becomes approved architecture, move the normative decision into a dedicated ADR/decision record and keep only a concise rollup/link here.
 
-When a task becomes `DONE`, record enough evidence (commit, test result, released document, or concise verification note) that a future maintainer can determine why it is considered complete.
+When a task becomes `DONE`, populate enough evidence and a verification date that a future maintainer can determine why it is complete.
