@@ -18,6 +18,12 @@ Project-specific technical state must never be copied into this repository.
 - Supported runtime schema: `hub_schema_version: 1`
 - Status: early reference implementation; backward-compatible refinement is expected before `1.0.0`.
 
+## Project status and roadmap
+
+The persistent history, goals, architecture direction, completed work, open questions, milestone breakdown, and release gates for the unification effort are maintained in `docs/PROJECT_HISTORY_GOALS_PLAN.md`.
+
+This roadmap is planning/state documentation, not the released normative behavior contract.
+
 ## Core guarantees
 
 1. Deterministic workspace → `project_id` → runtime-hub routing.
@@ -33,7 +39,7 @@ Project-specific technical state must never be copied into this repository.
 
 ```text
 skill/        skill behavior contract
-docs/         architecture and protocol documentation
+docs/         architecture, protocol, audit, and project-roadmap documentation
 templates/    reusable runtime/workspace templates
 prompts/      bootstrap, round-trip, and session workflows
 migrations/   schema migration records
@@ -41,4 +47,4 @@ tests/        synthetic protocol test scenarios
 tools/        future validation/migration utilities
 ```
 
-See `skill/SKILL.md` for the operational contract and `docs/compatibility.md` before changing runtime schema behavior.
+See `skill/SKILL.md` for the operational contract, `docs/PROJECT_HISTORY_GOALS_PLAN.md` for the current project plan, and `docs/compatibility.md` before changing runtime schema behavior.
