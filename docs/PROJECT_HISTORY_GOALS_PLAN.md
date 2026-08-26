@@ -18,6 +18,8 @@ evidence_baseline:
   - tests/results/v0.1.0-static-regression.md
   - docs/proposals/UNIFIED_AUTHORITY_MODEL.md
   - docs/reviews/2026-08-26-unified-authority-model-review.md
+  - docs/reviews/2026-08-26-unified-authority-model-final-approval.md
+  - docs/decisions/ADR-0001-unified-authority-and-memory-boundary.md
 ---
 
 # Project Memory Skill — History, Goals, Plan, and Status
@@ -26,7 +28,7 @@ This file is the persistent **governance index and roadmap** for the Project Mem
 
 It is not a runtime memory file and must not be loaded during normal project startup. It is intended for Skill maintenance, architecture work, milestone review, and recovery of the development history.
 
-If this document conflicts with a released specification, release metadata, a test verdict, or runtime project state, the specialized source of truth wins.
+If this document conflicts with a released specification, release metadata, a test verdict, an accepted ADR, or runtime project state, the specialized source of truth wins.
 
 ## 1. Source-of-truth map
 
@@ -102,7 +104,7 @@ The installed and development/test Skill copies inspected by the audit were byte
 
 Evidence: `docs/audits/2026-08-local-project-memory-v1.1-audit-summary.md`.
 
-### 3.3 Target unified architecture — PROPOSED / UNRELEASED
+### 3.3 Target unified architecture — PARTIALLY ACCEPTED / UNRELEASED
 
 The project is converging on **one Skill with two memory domains**, not two competing Skills:
 
@@ -122,34 +124,38 @@ The project is converging on **one Skill with two memory domains**, not two comp
                     +--------- reconcile --------+
 ```
 
-This model is a planning target only. It does not override current released `0.1.0` Hub behavior or the current deployed local behavior until an explicit unified release/migration is approved.
+M1.1/M1.2 authority and field-boundary decisions are now accepted in `ADR-0001`. The wider unified architecture remains unreleased and incomplete: M1.3–M1.8, source/version decisions, implementation, migration, and validation still remain.
 
-## 4. Proposed authority model — detailed proposal under final approval review
+The accepted ADR does not override current released `0.1.0` Hub behavior or the current deployed local behavior until an explicit later release/migration is approved.
 
-Authority is intended to be divided by information class and scope rather than by declaring local or remote storage globally superior.
+## 4. Accepted authority/boundary architecture — ADR-0001
 
-| Information class / record | Proposed owner / role | Publication direction |
+Authority is divided by information class and scope rather than by declaring local or remote storage globally superior.
+
+| Information class / record | Accepted owner / role | Publication direction |
 | --- | --- | --- |
 | Source code, datasets, generated outputs, raw logs, direct experiment artifacts | workspace evidence itself | never replaced by memory summaries |
 | `AGENTS.md` binding metadata | workspace binding for Skill/project identity | may reference stable `project_id` / Hub entry; not a project-state transcript |
 | local `.ai/PROJECT.md` | stable local project background, constraints, terminology, repository map | selected minimized shared fields only |
 | local `.ai/CURRENT.md` | authoritative active-work state for the local workspace | promoted selectively, never mirrored automatically |
 | local `.ai/TASKS.md`, DEC/EXP/handoffs/local sessions/research | detailed local lifecycle/evidence | local by default; promote derived conclusions only when policy permits |
-| Hub `projects/<project-id>/PROJECT.md` | proposed last reconciled shared checkpoint for other agents/devices | shared-checkpoint projection/reconciliation only |
+| Hub `projects/<project-id>/PROJECT.md` | future last reconciled shared checkpoint for other agents/devices | shared-checkpoint projection/reconciliation only |
 | Hub `projects/INDEX.md` | cross-project identity/routing registry | Hub-only routing role; not equivalent to local `.ai/INDEX.md` |
 | Hub per-project `sessions/` | important shared session trace | only when cross-session traceability justifies publication |
 | Hub shared `research/` / `decisions/` | explicitly promoted reusable/cross-project material | promotion requires scope/applicability metadata |
 
-Planning principle:
+Accepted principle:
 
 > **Evidence and scope determine authority; neither local nor remote storage wins merely because of location.**
 
-The detailed M1.1/M1.2 proposal now defines owner/writer/reader, publication direction, conflict behavior, provenance expectations, privacy/classification, retention/deletion semantics, field-policy inheritance, and the exact semantic scope of Hub checkpoint reconciliation. It remains non-normative until final approval and ADR promotion.
+The field-level architecture additionally fixes classification/privacy fail-closed behavior, field-policy inheritance, retention/deletion semantics, and semantic B/R/L shared-checkpoint reconciliation scope.
 
 Evidence:
 
 - `docs/proposals/UNIFIED_AUTHORITY_MODEL.md`
 - `docs/reviews/2026-08-26-unified-authority-model-review.md`
+- `docs/reviews/2026-08-26-unified-authority-model-final-approval.md`
+- `docs/decisions/ADR-0001-unified-authority-and-memory-boundary.md`
 
 ## 5. Frequency and retrieval model — proposed
 
@@ -203,19 +209,20 @@ A capability may be `EXECUTABLE` but not `LIVE_VALIDATED`, or `PROTOCOL_ONLY` ye
 - **H4 — real usage exposed duplication.** Local `.ai` proved faster-moving and more detailed than remote Hub state; unconditional dual loading created redundant context.
 - **H5 — strict read-only audit completed.** Confirmed the local implementation already contains many features that must not be reimplemented independently; identified dual-authority risk and the need for unification before `0.2.0` implementation.
 - **H6 — governance review.** The project-management document itself was corrected so proposed architecture, released behavior, maturity, evidence, and runtime state cannot silently become a second specification/source of truth.
-- **H7 — M1 authority/boundary review.** Architecture direction was accepted with no blocking defect; six required clarifications were identified and integrated: roadmap evidence, field-policy inheritance, retention/deletion, P3 hard block, unclassified fail-closed default, and shared-checkpoint reconciliation scope. Final approval remains pending.
+- **H7 — M1 authority/boundary review.** Architecture direction was accepted with no blocking defect; six required clarifications were identified and integrated: roadmap evidence, field-policy inheritance, retention/deletion, P3 hard block, unclassified fail-closed default, and shared-checkpoint reconciliation scope.
+- **H8 — M1.1/M1.2 final approval and ADR promotion.** R1–R12 were approved, M1.1/M1.2 were approved with no blocking defects, and the accepted architecture was promoted to `ADR-0001`. No current runtime/released behavior was changed.
 
 ## 8. Planning decisions
 
-These are planning-level decisions only. When approved as architecture, promote them to dedicated ADR/decision files and leave only a rollup here.
+These remain planning-level unless covered by an accepted ADR. Where a planning item overlaps `ADR-0001`, the ADR is authoritative for the accepted architecture scope.
 
 - **D-P1 — Do not build a second local-memory implementation.** Reuse/productize the existing local core.
 - **D-P2 — Keep the Hub, but narrow its proposed unified role.** Registry/routing, shared checkpoint, cross-agent/device coordination, shared trace, remote concurrency, compatibility/migration.
 - **D-P3 — Pre-write refresh remains mandatory.** Before writing shared mutable state, re-read/re-check latest state and reconcile rather than blindly overwrite. Remote Hub uses blob SHA where available; local multi-session semantics still need executable design/tests.
 - **D-P4 — One canonical Skill release stream is required.** Manually synchronized installed/dev behavior copies are not acceptable long term.
 - **D-P5 — Existing transport and future Hub adapter are separate semantic layers.** Mailbox/handoff/receipt/non-canonical snapshot behavior must not silently become authoritative Hub synchronization.
-- **D-P6 — Shared reconciliation is semantic, not full-tree synchronization.** Local state is projected into a minimized shared-checkpoint candidate before B/R/L reconciliation; local source files remain outside the Hub merge domain.
-- **D-P7 — Publication fails closed on privacy uncertainty.** P3 and UNCLASSIFIED material cannot enter Project Memory promotion; a safe derivative must be a new independently classified object.
+- **D-P6 — Shared reconciliation is semantic, not full-tree synchronization.** Accepted by `ADR-0001`; local state is projected into a minimized shared-checkpoint candidate before B/R/L reconciliation.
+- **D-P7 — Publication fails closed on privacy uncertainty.** Accepted by `ADR-0001`; P3 and UNCLASSIFIED material cannot enter Project Memory promotion, and a safe derivative must be a new independently classified object.
 
 ## 9. Open architecture questions
 
@@ -258,15 +265,15 @@ Status values are only `DONE`, `ACTIVE`, `PLANNED`, `BLOCKED`, `DEFERRED`, `REJE
 
 | ID | Deliverable | Status | Depends on | Acceptance | Evidence | Last verified |
 | --- | --- | --- | --- | --- | --- | --- |
-| M1.1 | Authority model by information scope | ACTIVE | M0 | every information class has one explicit owner/role; final review accepts R1–R12 | `docs/proposals/UNIFIED_AUTHORITY_MODEL.md`; `docs/reviews/2026-08-26-unified-authority-model-review.md` | 2026-08-26 |
-| M1.2 | Field-level local/Hub mapping | ACTIVE | M1.1 | owner, writer, readers, publish direction, conflict rule, provenance, privacy/classification, retention/deletion and reconciliation scope defined; final review accepts R1–R12 | `docs/proposals/UNIFIED_AUTHORITY_MODEL.md`; `docs/reviews/2026-08-26-unified-authority-model-review.md` | 2026-08-26 |
+| M1.1 | Authority model by information scope | DONE | M0 | every information class has one explicit owner/role; final review accepts R1–R12 | `docs/proposals/UNIFIED_AUTHORITY_MODEL.md`; initial review; final approval; `ADR-0001` | 2026-08-26 |
+| M1.2 | Field-level local/Hub mapping | DONE | M1.1 | owner, writer, readers, publish direction, conflict rule, provenance, privacy/classification, retention/deletion and reconciliation scope defined; final review accepts R1–R12 | `docs/proposals/UNIFIED_AUTHORITY_MODEL.md`; initial review; final approval; `ADR-0001` | 2026-08-26 |
 | M1.3 | Local multi-session safe-write semantics | PLANNED | M1.2 | lost-update prevention specified for shared local mutable files | — | — |
 | M1.4 | Unified remote refresh/reconcile semantics | PLANNED | M1.2 | executable-oriented B/R/L three-way behavior deterministic within shared-checkpoint schema | — | — |
 | M1.5 | Hub adapter vs transport boundary | PLANNED | M0.6 | mailbox/snapshot semantics cannot be confused with Hub checkpoint sync | — | — |
 | M1.6 | Privacy / never-publish classes | PLANNED | M1.2 | classification/detection/purge behavior implements P0/P1/P2/P3/UNCLASSIFIED rules safely | — | — |
 | M1.7 | Normal fast path vs recovery path | PLANNED | M1.2 | conditions and fallbacks explicit | — | — |
 | M1.8 | Memory payload / compaction budgets | PLANNED | M1.7 | measurable budgets and thresholds defined | — | — |
-| M1.9 | Unified Architecture Proposal approved | BLOCKED | M1.1–M1.8 | approved ADR/spec before source migration | — | — |
+| M1.9 | Unified Architecture Proposal approved | BLOCKED | M1.1–M1.8 | approved ADR/spec before source migration | M1.1/M1.2 approved via `ADR-0001`; remaining M1.3–M1.8 pending | — |
 
 ### M2 — canonical source and version model
 
@@ -355,6 +362,8 @@ Implementation may begin only when:
 10. executable tests cover core local behavior, routing/isolation, adapter behavior, migration, and concurrency;
 11. rollback exists;
 12. memory/token payload is measured.
+
+M1.1 and M1.2 now satisfy the authority and field-boundary portions of these criteria through `ADR-0001`; the overall architecture gate remains open until the remaining milestones are complete.
 
 ## 14. Release gate
 
