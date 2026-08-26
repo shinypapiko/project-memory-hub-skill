@@ -1,16 +1,18 @@
 ---
 document_role: architecture-proposal
-status: review-required
+status: approved-proposal
 normative: false
-architecture_state: proposed-unreleased
+architecture_state: accepted-unreleased
 runtime_load_policy: maintenance-only
 milestones:
   - M1.1
   - M1.2
 created: 2026-08-26
 last_reviewed: 2026-08-26
-review_state: clarifications-integrated-final-approval-pending
+review_state: final-approved-promoted-to-adr
 review_record: docs/reviews/2026-08-26-unified-authority-model-review.md
+final_review_record: docs/reviews/2026-08-26-unified-authority-model-final-approval.md
+approved_by: docs/decisions/ADR-0001-unified-authority-and-memory-boundary.md
 evidence_baseline:
   - docs/audits/2026-08-local-project-memory-v1.1-audit-summary.md
   - tests/results/v0.1.0-static-regression.md
@@ -20,21 +22,17 @@ evidence_baseline:
 
 ## 0. Purpose and status
 
-This document proposes the authority model for the future unified Project Memory Skill. It covers M1.1 (authority by information scope) and M1.2 (local-memory versus Hub-checkpoint boundary field-by-field).
+This document preserves the detailed proposal and rationale for the future unified Project Memory Skill authority model. It covers M1.1 (authority by information scope) and M1.2 (local-memory versus Hub-checkpoint boundary field-by-field).
 
-It is **not released behavior**. Current `project-memory-hub-skill 0.1.0`, the currently deployed local `project-memory` implementation, and Runtime Hub schema 1 continue to behave according to their existing contracts until an explicit release/migration changes them.
+R1–R12 and M1.1/M1.2 received final approval on 2026-08-26 with no blocking defects. The accepted architecture decision is recorded in `docs/decisions/ADR-0001-unified-authority-and-memory-boundary.md`.
 
-This proposal must not be loaded during ordinary project startup.
+This proposal remains **non-normative**. It is not released runtime behavior and must not be loaded during ordinary project startup. Current `project-memory-hub-skill 0.1.0`, the deployed local `project-memory` implementation, and Runtime Hub schema 1 continue to behave according to their existing released/deployed contracts until an explicit later release/migration changes them.
 
-Review state after the first architecture review:
+Evidence:
 
-- architecture direction: acceptable;
-- blocking defects: none identified;
-- M1.1 / M1.2: active, not DONE;
-- six required clarifications have been integrated here;
-- final approval / ADR promotion remains pending.
-
-Evidence: `docs/reviews/2026-08-26-unified-authority-model-review.md`.
+- `docs/reviews/2026-08-26-unified-authority-model-review.md`
+- `docs/reviews/2026-08-26-unified-authority-model-final-approval.md`
+- `docs/decisions/ADR-0001-unified-authority-and-memory-boundary.md`
 
 ## 1. Terms
 
@@ -461,24 +459,29 @@ The unified implementation should be rejected if it violates any of these invari
 12. checkpoint omission can silently delete an owning source record;
 13. Hub three-way reconciliation operates over full local files instead of the shared-checkpoint schema.
 
-## 15. M1.1 / M1.2 review decisions required
+## 15. Approval record
 
-Approval of this proposal requires explicit agreement or revision on these points:
+The final approval review accepted all review decisions without revision:
 
-- **R1:** Authority is semantic-scope-based, not globally local-first or Hub-first.
-- **R2:** `.ai/PROJECT.md` owns stable detailed local background; `.ai/CURRENT.md` owns active local work.
-- **R3:** Hub `PROJECT.md` becomes the future last reconciled **shared checkpoint**, not a full local memory mirror.
-- **R4:** Hub `projects/INDEX.md` remains the shared multi-project routing authority; local `INDEX.md` remains unrelated local retrieval routing.
-- **R5:** `AGENTS.md` remains a small invocation/binding layer and does not store project state.
-- **R6:** EXP/DEC/tasks/local sessions/research/handoffs remain local by default and are promoted selectively as derived summaries/records.
-- **R7:** Remote-to-local hydration never overwrites local PROJECT/CURRENT wholesale.
-- **R8:** Promotion requires classification, privacy, provenance, minimization, and pre-write remote refresh; P3/UNCLASSIFIED candidates hard-fail publication.
-- **R9:** Identity conflicts fail closed; local+remote shared divergence uses scoped B/R/L three-way semantic reconciliation.
-- **R10:** Policy inheritance is field-specific but cannot relax explicit prohibitions, provenance floors, privacy restrictions, or evidence/history retention floors.
-- **R11:** Supersession/compaction/omission are not deletion; destructive deletion requires an explicit owning-policy operation.
-- **R12:** Exact sync metadata, local concurrent-write mechanics, publication triggers, privacy detection implementation, and performance budgets remain separate later milestones rather than being prematurely fixed here.
+- R1: APPROVE
+- R2: APPROVE
+- R3: APPROVE
+- R4: APPROVE
+- R5: APPROVE
+- R6: APPROVE
+- R7: APPROVE
+- R8: APPROVE
+- R9: APPROVE
+- R10: APPROVE
+- R11: APPROVE
+- R12: APPROVE
+- M1.1: APPROVE
+- M1.2: APPROVE
+- blocking defects: none
 
-If a final review finds no new blocking defect and accepts R1–R12, M1.1/M1.2 may be approved and promoted to a dedicated ADR/decision record. M1.3+ concerns must not be pulled into these milestones merely to delay approval.
+The accepted architecture is promoted to `docs/decisions/ADR-0001-unified-authority-and-memory-boundary.md`.
+
+M1.3+ concerns remain outside this proposal's approved scope.
 
 ## 16. Evidence and relationship to current released behavior
 
@@ -487,6 +490,8 @@ Evidence baseline:
 - `docs/audits/2026-08-local-project-memory-v1.1-audit-summary.md`
 - `tests/results/v0.1.0-static-regression.md`
 - `docs/reviews/2026-08-26-unified-authority-model-review.md`
+- `docs/reviews/2026-08-26-unified-authority-model-final-approval.md`
+- `docs/decisions/ADR-0001-unified-authority-and-memory-boundary.md`
 - current Hub `skill/SKILL.md`, `docs/architecture.md`, `templates/PROJECT.md`, and `templates/AGENTS_BINDING.md`
 
-Current released Hub `0.1.0` still describes remote `PROJECT.md` as authoritative current project state and instructs bound workspaces to read it. This proposal intentionally does **not** modify those files yet. If approved, changing that behavior will require an explicit architecture decision, compatibility review, migration plan, template/spec updates, and post-change validation.
+Current released Hub `0.1.0` still describes remote `PROJECT.md` as authoritative current project state and instructs bound workspaces to read it. This proposal intentionally does **not** modify those files. Changing that runtime behavior requires a later explicit compatibility review, migration plan, implementation, template/spec update, testing, and release.
