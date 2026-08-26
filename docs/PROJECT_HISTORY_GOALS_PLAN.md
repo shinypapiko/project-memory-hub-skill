@@ -24,6 +24,7 @@ evidence_baseline:
   - docs/reviews/2026-08-26-local-multi-session-safe-write-review.md
   - docs/reviews/2026-08-27-local-multi-session-safe-write-final-approval.md
   - docs/decisions/ADR-0002-local-multi-session-safe-write.md
+  - docs/proposals/REMOTE_REFRESH_RECONCILIATION_STATE_MACHINE.md
 ---
 
 # Project Memory Skill — History, Goals, Plan, and Status
@@ -218,6 +219,7 @@ A capability may be `EXECUTABLE` but not `LIVE_VALIDATED`, or `PROTOCOL_ONLY` ye
 - **H9 — M1.3 local concurrency design started.** A proposal was drafted for optimistic per-file content hashes plus a short commit-time filesystem lock, stale-write rejection/rebase, atomic replace, concurrent DEC/EXP ID protection, and conservative no-lost-update behavior without requiring Git.
 - **H10 — M1.3 first review.** L1/L4/L6/L10/L11/L12 were approved; L2/L3/L5/L7/L8/L9 required revision. Five blocking defects were identified around cooperative-writer scope/canonical resource identity, bounded liveness and multi-lock cleanup, Windows/atomic-install failure classification, INDEX repairability, and partial multi-resource completion. The eight required clarifications were integrated into the proposal.
 - **H11 — M1.3 final approval and ADR promotion.** Revised L1–L12 were all approved, B1–B5 were all closed, no new blocking defect was identified, and the accepted local safe-write architecture was promoted to `ADR-0002`. The future unified capability remains `PROTOCOL_ONLY` / `UNVALIDATED`; no current runtime/released behavior was changed.
+- **H12 — M1.4 remote reconciliation design started.** A deterministic remote state-machine proposal now separates `observed_sha` from `reconciled_sha`, defines B/R/L/C semantics, per-field three-way classification, CAS stale recomputation, bounded contention, conflict outcomes, unknown-commit recovery, and strict marker-advancement rules. Review of RR1–RR14 is pending.
 
 ## 8. Planning decisions
 
@@ -231,6 +233,7 @@ These remain planning-level unless covered by an accepted ADR. Where a planning 
 - **D-P6 — Shared reconciliation is semantic, not full-tree synchronization.** Accepted by `ADR-0001`; local state is projected into a minimized shared-checkpoint candidate before B/R/L reconciliation.
 - **D-P7 — Publication fails closed on privacy uncertainty.** Accepted by `ADR-0001`; P3 and UNCLASSIFIED material cannot enter Project Memory promotion, and a safe derivative must be a new independently classified object.
 - **D-P8 — Local no-lost-update is a cooperative-writer contract.** Accepted by `ADR-0002`; the target uses canonical resource identity, exact base hashes, short commit locks, atomic replace/no-replace install, bounded retry, and structured partial/unknown commit results; direct writers that bypass the helper are outside the mutual-exclusion guarantee.
+- **D-P9 — Remote observation and reconciliation are distinct.** M1.4 proposes that observing a newer remote SHA never by itself advances the reconciled base; stale CAS invalidates the old candidate and forces fresh fetch plus B/R/L recomputation.
 
 ## 9. Open architecture questions
 
@@ -238,9 +241,9 @@ Resolve before migration/implementation:
 
 - Which repository becomes the canonical source for the **future unified** Skill?
 - What reusable subset of the audited local distribution is imported first?
-- What metadata records the last fully reconciled Hub state (`hub_project_sha` or equivalent)?
+- What metadata records the last fully reconciled Hub state (`reconciled_sha`, `observed_sha`, base content identity, or equivalent)?
 - Which concrete platform primitives satisfy `ADR-0002` on supported Windows/NTFS environments, and how will they be executable-tested?
-- What exact executable three-way reconciliation mechanism implements the approved semantic B/R/L rules?
+- Does the M1.4 state machine pass RR1–RR14 review, and what later executable mechanism will implement the accepted B/R/L/C + CAS semantics?
 - What exact milestone/shared-state trigger causes a Hub publication?
 - What privacy-classification/detection mechanism implements P0/P1/P2/P3/UNCLASSIFIED safely?
 - How does web/new-device recovery hydrate context without making local active state remote-canonical?
@@ -276,12 +279,12 @@ Status values are only `DONE`, `ACTIVE`, `PLANNED`, `BLOCKED`, `DEFERRED`, `REJE
 | M1.1 | Authority model by information scope | DONE | M0 | every information class has one explicit owner/role; final review accepts R1–R12 | `docs/proposals/UNIFIED_AUTHORITY_MODEL.md`; initial review; final approval; `ADR-0001` | 2026-08-26 |
 | M1.2 | Field-level local/Hub mapping | DONE | M1.1 | owner, writer, readers, publish direction, conflict rule, provenance, privacy/classification, retention/deletion and reconciliation scope defined; final review accepts R1–R12 | `docs/proposals/UNIFIED_AUTHORITY_MODEL.md`; initial review; final approval; `ADR-0001` | 2026-08-26 |
 | M1.3 | Local multi-session safe-write semantics | DONE | M1.2 | no-lost-update cooperative-writer contract, canonical resource identity, bounded retry, atomic replace/no-replace, ID allocation, index repair boundaries, multi-lock cleanup and partial/unknown commit recovery specified; final review accepts revised L1–L12 | `docs/proposals/LOCAL_MULTI_SESSION_SAFE_WRITE.md`; initial review; final approval; `ADR-0002` | 2026-08-27 |
-| M1.4 | Unified remote refresh/reconcile semantics | PLANNED | M1.2 | executable-oriented B/R/L three-way behavior deterministic within shared-checkpoint schema | — | — |
+| M1.4 | Unified remote refresh/reconcile semantics | ACTIVE | M1.2 | deterministic B/R/L/C state machine defines observed vs reconciled SHA, per-field three-way classification, CAS stale recomputation, bounded contention, conflict/unknown-commit outcomes, and exact marker-advancement rules; final review accepts RR1–RR14 | `docs/proposals/REMOTE_REFRESH_RECONCILIATION_STATE_MACHINE.md` | 2026-08-27 |
 | M1.5 | Hub adapter vs transport boundary | PLANNED | M0.6 | mailbox/snapshot semantics cannot be confused with Hub checkpoint sync | — | — |
 | M1.6 | Privacy / never-publish classes | PLANNED | M1.2 | classification/detection/purge behavior implements P0/P1/P2/P3/UNCLASSIFIED rules safely | — | — |
 | M1.7 | Normal fast path vs recovery path | PLANNED | M1.2 | conditions and fallbacks explicit | — | — |
 | M1.8 | Memory payload / compaction budgets | PLANNED | M1.7 | measurable budgets and thresholds defined | — | — |
-| M1.9 | Unified Architecture Proposal approved | BLOCKED | M1.1–M1.8 | approved ADR/spec before source migration | M1.1–M1.3 accepted via `ADR-0001` / `ADR-0002`; M1.4–M1.8 pending | — |
+| M1.9 | Unified Architecture Proposal approved | BLOCKED | M1.1–M1.8 | approved ADR/spec before source migration | M1.1–M1.3 accepted via `ADR-0001` / `ADR-0002`; M1.4 active; M1.5–M1.8 pending | — |
 
 ### M2 — canonical source and version model
 
@@ -356,6 +359,8 @@ Status values are only `DONE`, `ACTIVE`, `PLANNED`, `BLOCKED`, `DEFERRED`, `REJE
 - `REJECTED` — fall back from failed atomic replace/install to truncating or in-place overwrite.
 - `REJECTED` — treat all index content as safely reconstructible.
 - `REJECTED` — silently roll back partially committed multi-resource operations using stale snapshots.
+- `REJECTED` — treat a newly observed remote SHA as reconciled without semantic acceptance.
+- `REJECTED` — retry a stale remote CAS by replaying a candidate computed from an older remote revision.
 - `PAUSED` — nominal `0.2.0` implementation before the unified architecture/source model is approved.
 - `PAUSED` — migrate real `.ai/` trees before synthetic migration/rollback tests exist.
 
@@ -376,7 +381,7 @@ Implementation may begin only when:
 11. rollback exists;
 12. memory/token payload is measured.
 
-M1.1 and M1.2 satisfy the authority and field-boundary portions of these criteria through `ADR-0001`; M1.3 satisfies the local cooperative-writer safe-write architecture portion through `ADR-0002`. The overall architecture gate remains open until the remaining milestones are complete.
+M1.1 and M1.2 satisfy the authority and field-boundary portions of these criteria through `ADR-0001`; M1.3 satisfies the local cooperative-writer safe-write architecture portion through `ADR-0002`. M1.4 is now defining the remote reconciliation portion. The overall architecture gate remains open until the remaining milestones are complete.
 
 ## 14. Release gate
 
