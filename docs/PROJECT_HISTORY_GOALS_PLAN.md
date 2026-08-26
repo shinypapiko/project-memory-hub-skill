@@ -16,6 +16,8 @@ last_reviewed: 2026-08-26
 evidence_baseline:
   - docs/audits/2026-08-local-project-memory-v1.1-audit-summary.md
   - tests/results/v0.1.0-static-regression.md
+  - docs/proposals/UNIFIED_AUTHORITY_MODEL.md
+  - docs/reviews/2026-08-26-unified-authority-model-review.md
 ---
 
 # Project Memory Skill — History, Goals, Plan, and Status
@@ -122,7 +124,7 @@ The project is converging on **one Skill with two memory domains**, not two comp
 
 This model is a planning target only. It does not override current released `0.1.0` Hub behavior or the current deployed local behavior until an explicit unified release/migration is approved.
 
-## 4. Proposed authority model — field-level map still pending
+## 4. Proposed authority model — detailed proposal under final approval review
 
 Authority is intended to be divided by information class and scope rather than by declaring local or remote storage globally superior.
 
@@ -130,10 +132,10 @@ Authority is intended to be divided by information class and scope rather than b
 | --- | --- | --- |
 | Source code, datasets, generated outputs, raw logs, direct experiment artifacts | workspace evidence itself | never replaced by memory summaries |
 | `AGENTS.md` binding metadata | workspace binding for Skill/project identity | may reference stable `project_id` / Hub entry; not a project-state transcript |
-| local `.ai/PROJECT.md` | stable local project background, constraints, terminology, repository map | exact field mapping to Hub remains M1.2 |
+| local `.ai/PROJECT.md` | stable local project background, constraints, terminology, repository map | selected minimized shared fields only |
 | local `.ai/CURRENT.md` | authoritative active-work state for the local workspace | promoted selectively, never mirrored automatically |
-| local `.ai/TASKS.md`, DEC/EXP/handoffs/local sessions/research | detailed local lifecycle/evidence | local by default; promote conclusions only when policy requires |
-| Hub `projects/<project-id>/PROJECT.md` | proposed shared stable checkpoint for other agents/devices | milestone/shared-state publication only |
+| local `.ai/TASKS.md`, DEC/EXP/handoffs/local sessions/research | detailed local lifecycle/evidence | local by default; promote derived conclusions only when policy permits |
+| Hub `projects/<project-id>/PROJECT.md` | proposed last reconciled shared checkpoint for other agents/devices | shared-checkpoint projection/reconciliation only |
 | Hub `projects/INDEX.md` | cross-project identity/routing registry | Hub-only routing role; not equivalent to local `.ai/INDEX.md` |
 | Hub per-project `sessions/` | important shared session trace | only when cross-session traceability justifies publication |
 | Hub shared `research/` / `decisions/` | explicitly promoted reusable/cross-project material | promotion requires scope/applicability metadata |
@@ -142,7 +144,12 @@ Planning principle:
 
 > **Evidence and scope determine authority; neither local nor remote storage wins merely because of location.**
 
-The table above is not yet sufficient for implementation. M1.2 must define field-level ownership, readers/writers, publication direction, privacy class, conflict behavior, provenance, and retention.
+The detailed M1.1/M1.2 proposal now defines owner/writer/reader, publication direction, conflict behavior, provenance expectations, privacy/classification, retention/deletion semantics, field-policy inheritance, and the exact semantic scope of Hub checkpoint reconciliation. It remains non-normative until final approval and ADR promotion.
+
+Evidence:
+
+- `docs/proposals/UNIFIED_AUTHORITY_MODEL.md`
+- `docs/reviews/2026-08-26-unified-authority-model-review.md`
 
 ## 5. Frequency and retrieval model — proposed
 
@@ -185,7 +192,7 @@ Do not use one ladder that confuses implementation with validation. Track them i
 - `STATIC_VALIDATED` — specification/static/synthetic consistency validated.
 - `LIVE_VALIDATED` — representative live behavior executed successfully.
 
-A capability may be `EXECUTABLE` but not `LIVE_VALIDATED`, or `PROTOCOL_ONLY` yet have a manually executed live validation. Record both dimensions where maturity matters.
+A capability may be `EXECUTABLE` but not `LIVE_VALIDATED`, or `PROTOCOL_ONLY` yet have a manually executed live validation. Record both dimensions where maturity matters. Validation evidence should be capability-scoped, version/commit-bound, and append-oriented rather than overwriting older validation records.
 
 ## 7. Important history
 
@@ -196,6 +203,7 @@ A capability may be `EXECUTABLE` but not `LIVE_VALIDATED`, or `PROTOCOL_ONLY` ye
 - **H4 — real usage exposed duplication.** Local `.ai` proved faster-moving and more detailed than remote Hub state; unconditional dual loading created redundant context.
 - **H5 — strict read-only audit completed.** Confirmed the local implementation already contains many features that must not be reimplemented independently; identified dual-authority risk and the need for unification before `0.2.0` implementation.
 - **H6 — governance review.** The project-management document itself was corrected so proposed architecture, released behavior, maturity, evidence, and runtime state cannot silently become a second specification/source of truth.
+- **H7 — M1 authority/boundary review.** Architecture direction was accepted with no blocking defect; six required clarifications were identified and integrated: roadmap evidence, field-policy inheritance, retention/deletion, P3 hard block, unclassified fail-closed default, and shared-checkpoint reconciliation scope. Final approval remains pending.
 
 ## 8. Planning decisions
 
@@ -206,6 +214,8 @@ These are planning-level decisions only. When approved as architecture, promote 
 - **D-P3 — Pre-write refresh remains mandatory.** Before writing shared mutable state, re-read/re-check latest state and reconcile rather than blindly overwrite. Remote Hub uses blob SHA where available; local multi-session semantics still need executable design/tests.
 - **D-P4 — One canonical Skill release stream is required.** Manually synchronized installed/dev behavior copies are not acceptable long term.
 - **D-P5 — Existing transport and future Hub adapter are separate semantic layers.** Mailbox/handoff/receipt/non-canonical snapshot behavior must not silently become authoritative Hub synchronization.
+- **D-P6 — Shared reconciliation is semantic, not full-tree synchronization.** Local state is projected into a minimized shared-checkpoint candidate before B/R/L reconciliation; local source files remain outside the Hub merge domain.
+- **D-P7 — Publication fails closed on privacy uncertainty.** P3 and UNCLASSIFIED material cannot enter Project Memory promotion; a safe derivative must be a new independently classified object.
 
 ## 9. Open architecture questions
 
@@ -213,14 +223,14 @@ Resolve before migration/implementation:
 
 - Which repository becomes the canonical source for the **future unified** Skill?
 - What reusable subset of the audited local distribution is imported first?
-- What is the field-level boundary between `.ai/PROJECT.md`, `.ai/CURRENT.md`, and Hub `PROJECT.md`?
 - What metadata records the last fully reconciled Hub state (`hub_project_sha` or equivalent)?
 - What local concurrency primitive prevents lost updates when several Codex sessions write `.ai/CURRENT.md` / indexes?
-- How are three-way local/remote conflicts represented and reconciled?
-- Which local information classes are never publishable?
+- What exact executable three-way reconciliation mechanism implements the approved semantic B/R/L rules?
 - What exact milestone/shared-state trigger causes a Hub publication?
+- What privacy-classification/detection mechanism implements P0/P1/P2/P3/UNCLASSIFIED safely?
 - How does web/new-device recovery hydrate context without making local active state remote-canonical?
 - What startup/retrieval/Hub-probe/compaction budgets are realistic?
+- Do privacy-driven purge requirements need a dedicated secure-deletion model beyond ordinary preserve/archive/supersede retention?
 
 ## 10. Performance targets — engineering targets, not guarantees
 
@@ -242,18 +252,18 @@ Status values are only `DONE`, `ACTIVE`, `PLANNED`, `BLOCKED`, `DEFERRED`, `REJE
 | M0.4 | Hub Skill reference source repository created | DONE | — | source-controlled Hub protocol/templates/tests/versioning exist | `VERSION`, `CHANGELOG.md`, `skill/SKILL.md` | 2026-08-26 |
 | M0.5 | Hub Skill `0.1.0` / Hub schema 1 compatibility defined | DONE | M0.4 | release/schema compatibility is explicit | `VERSION`, `docs/compatibility.md`, Runtime Hub `HUB_SCHEMA.md` | 2026-08-26 |
 | M0.6 | Existing local implementation audited read-only | DONE | — | reusable behavior, schema, tooling, transport, version provenance, gaps recorded without mutation | `docs/audits/2026-08-local-project-memory-v1.1-audit-summary.md` | 2026-08-26 |
-| M0.7 | Dual-source-of-truth risk identified | DONE | M0.6 | conflicting authority surfaces and non-equivalent indexes/snapshots documented | audit summary + this governance review | 2026-08-26 |
+| M0.7 | Dual-source-of-truth risk identified | DONE | M0.6 | conflicting authority surfaces and non-equivalent indexes/snapshots documented | audit summary + governance review | 2026-08-26 |
 
 ### M1 — unified architecture specification
 
 | ID | Deliverable | Status | Depends on | Acceptance | Evidence | Last verified |
 | --- | --- | --- | --- | --- | --- | --- |
-| M1.1 | Authority model by information scope | ACTIVE | M0 | every information class has one explicit owner/role | proposed map in §4; requires approval/ADR | 2026-08-26 |
-| M1.2 | Field-level local/Hub mapping | PLANNED | M1.1 | owner, writer, readers, publish direction, conflict rule, provenance, privacy, retention defined | — | — |
+| M1.1 | Authority model by information scope | ACTIVE | M0 | every information class has one explicit owner/role; final review accepts R1–R12 | `docs/proposals/UNIFIED_AUTHORITY_MODEL.md`; `docs/reviews/2026-08-26-unified-authority-model-review.md` | 2026-08-26 |
+| M1.2 | Field-level local/Hub mapping | ACTIVE | M1.1 | owner, writer, readers, publish direction, conflict rule, provenance, privacy/classification, retention/deletion and reconciliation scope defined; final review accepts R1–R12 | `docs/proposals/UNIFIED_AUTHORITY_MODEL.md`; `docs/reviews/2026-08-26-unified-authority-model-review.md` | 2026-08-26 |
 | M1.3 | Local multi-session safe-write semantics | PLANNED | M1.2 | lost-update prevention specified for shared local mutable files | — | — |
-| M1.4 | Unified remote refresh/reconcile semantics | PLANNED | M1.2 | three-way/local-remote behavior deterministic | — | — |
+| M1.4 | Unified remote refresh/reconcile semantics | PLANNED | M1.2 | executable-oriented B/R/L three-way behavior deterministic within shared-checkpoint schema | — | — |
 | M1.5 | Hub adapter vs transport boundary | PLANNED | M0.6 | mailbox/snapshot semantics cannot be confused with Hub checkpoint sync | — | — |
-| M1.6 | Privacy / never-publish classes | PLANNED | M1.2 | every publishable class has explicit privacy rule | — | — |
+| M1.6 | Privacy / never-publish classes | PLANNED | M1.2 | classification/detection/purge behavior implements P0/P1/P2/P3/UNCLASSIFIED rules safely | — | — |
 | M1.7 | Normal fast path vs recovery path | PLANNED | M1.2 | conditions and fallbacks explicit | — | — |
 | M1.8 | Memory payload / compaction budgets | PLANNED | M1.7 | measurable budgets and thresholds defined | — | — |
 | M1.9 | Unified Architecture Proposal approved | BLOCKED | M1.1–M1.8 | approved ADR/spec before source migration | — | — |
@@ -277,8 +287,8 @@ Status values are only `DONE`, `ACTIVE`, `PLANNED`, `BLOCKED`, `DEFERRED`, `REJE
 | M3.2 | Last-reconciled SHA semantics | PLANNED | M3.1 | distinguishes merely observed remote SHA from fully reconciled state | — | — |
 | M3.3 | Lightweight remote-change probe | BLOCKED | M2, M3.1 | detects changed shared checkpoint without full payload injection | — | — |
 | M3.4 | Unchanged-remote fast path | BLOCKED | M3.3 | full Hub project read skipped safely when unchanged | — | — |
-| M3.5 | Changed-remote fetch/reconcile path | BLOCKED | M3.1–M3.3, M1.4 | preserves compatible local + remote work, surfaces conflicts | — | — |
-| M3.6 | Milestone/shared-checkpoint publication | BLOCKED | M1.2, M1.6 | explicit promotion trigger and compact payload | — | — |
+| M3.5 | Changed-remote fetch/reconcile path | BLOCKED | M3.1–M3.3, M1.4 | preserves compatible local + remote shared fields, surfaces conflicts, never merges full local tree | — | — |
+| M3.6 | Milestone/shared-checkpoint publication | BLOCKED | M1.2, M1.6 | explicit promotion trigger and compact classified payload | — | — |
 | M3.7 | Local detailed evidence stays local by default | PLANNED | M1.6 | EXP/DEC/task details are never bulk mirrored implicitly | — | — |
 | M3.8 | Web/new-device hydration | PLANNED | M1.7 | recovery works without local filesystem access | — | — |
 
@@ -290,7 +300,7 @@ Status values are only `DONE`, `ACTIVE`, `PLANNED`, `BLOCKED`, `DEFERRED`, `REJE
 | M4.1b | Remote stale-SHA behavior live-validated | PLANNED | M4.1a | defined two-session live test passes | `tests/LIVE_CONCURRENCY_TEST.md` (procedure only) | — |
 | M4.2 | Local safe concurrent-write design | PLANNED | M1.3 | CURRENT/index shared writes have deterministic no-lost-update semantics | — | — |
 | M4.3 | Executable local multi-session conflict tests | BLOCKED | M4.2 | controlled concurrent fixtures pass | — | — |
-| M4.4 | Local-vs-remote divergence tests | PLANNED | M1.4, M3 | compatible and conflicting branches behave as specified | — | — |
+| M4.4 | Local-vs-remote divergence tests | PLANNED | M1.4, M3 | compatible and conflicting shared projections behave as specified | — | — |
 | M4.5 | Three-session stress scenario | PLANNED | M4.3, M4.4 | A/B/C concurrent compatible updates produce no lost update | — | — |
 
 ### M5 — migration and compatibility
@@ -324,6 +334,8 @@ Status values are only `DONE`, `ACTIVE`, `PLANNED`, `BLOCKED`, `DEFERRED`, `REJE
 - `REJECTED` — treat existing transport CURRENT snapshots as authoritative Hub state.
 - `REJECTED` — blindly allow remote Hub state to overwrite newer local active-work evidence.
 - `REJECTED` — blindly allow local active state to overwrite newer shared Hub state.
+- `REJECTED` — use full-tree/local-file bidirectional synchronization as Hub checkpoint reconciliation.
+- `REJECTED` — allow P3 or UNCLASSIFIED material to enter Project Memory promotion.
 - `PAUSED` — nominal `0.2.0` implementation before the unified architecture/source model is approved.
 - `PAUSED` — migrate real `.ai/` trees before synthetic migration/rollback tests exist.
 
