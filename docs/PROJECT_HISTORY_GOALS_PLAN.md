@@ -21,6 +21,7 @@ evidence_baseline:
   - docs/reviews/2026-08-26-unified-authority-model-final-approval.md
   - docs/decisions/ADR-0001-unified-authority-and-memory-boundary.md
   - docs/proposals/LOCAL_MULTI_SESSION_SAFE_WRITE.md
+  - docs/reviews/2026-08-26-local-multi-session-safe-write-review.md
 ---
 
 # Project Memory Skill — History, Goals, Plan, and Status
@@ -213,6 +214,7 @@ A capability may be `EXECUTABLE` but not `LIVE_VALIDATED`, or `PROTOCOL_ONLY` ye
 - **H7 — M1 authority/boundary review.** Architecture direction was accepted with no blocking defect; six required clarifications were identified and integrated: roadmap evidence, field-policy inheritance, retention/deletion, P3 hard block, unclassified fail-closed default, and shared-checkpoint reconciliation scope.
 - **H8 — M1.1/M1.2 final approval and ADR promotion.** R1–R12 were approved, M1.1/M1.2 were approved with no blocking defects, and the accepted architecture was promoted to `ADR-0001`. No current runtime/released behavior was changed.
 - **H9 — M1.3 local concurrency design started.** A proposal was drafted for optimistic per-file content hashes plus a short commit-time filesystem lock, stale-write rejection/rebase, atomic replace, concurrent DEC/EXP ID protection, and conservative no-lost-update behavior without requiring Git.
+- **H10 — M1.3 first review.** L1/L4/L6/L10/L11/L12 were approved; L2/L3/L5/L7/L8/L9 required revision. Five blocking defects were identified around cooperative-writer scope/canonical resource identity, bounded liveness and multi-lock cleanup, Windows/atomic-install failure classification, INDEX repairability, and partial multi-resource completion. The eight required clarifications were integrated into the proposal; final approval remains pending.
 
 ## 8. Planning decisions
 
@@ -220,11 +222,12 @@ These remain planning-level unless covered by an accepted ADR. Where a planning 
 
 - **D-P1 — Do not build a second local-memory implementation.** Reuse/productize the existing local core.
 - **D-P2 — Keep the Hub, but narrow its proposed unified role.** Registry/routing, shared checkpoint, cross-agent/device coordination, shared trace, remote concurrency, compatibility/migration.
-- **D-P3 — Pre-write refresh remains mandatory.** Before writing shared mutable state, re-read/re-check latest state and reconcile rather than blindly overwrite. Remote Hub uses blob SHA where available; local multi-session semantics still need executable design/tests.
+- **D-P3 — Pre-write refresh remains mandatory.** Before writing shared mutable state, re-read/re-check latest state and reconcile rather than blindly overwrite. Remote Hub uses blob SHA where available; local M1.3 additionally requires a commit-time concurrency primitive to close the TOCTOU window.
 - **D-P4 — One canonical Skill release stream is required.** Manually synchronized installed/dev behavior copies are not acceptable long term.
 - **D-P5 — Existing transport and future Hub adapter are separate semantic layers.** Mailbox/handoff/receipt/non-canonical snapshot behavior must not silently become authoritative Hub synchronization.
 - **D-P6 — Shared reconciliation is semantic, not full-tree synchronization.** Accepted by `ADR-0001`; local state is projected into a minimized shared-checkpoint candidate before B/R/L reconciliation.
 - **D-P7 — Publication fails closed on privacy uncertainty.** Accepted by `ADR-0001`; P3 and UNCLASSIFIED material cannot enter Project Memory promotion, and a safe derivative must be a new independently classified object.
+- **D-P8 — Local no-lost-update is a cooperative-writer contract.** The M1.3 target uses canonical resource identity, exact base hashes, short commit locks, atomic replace/no-replace install, bounded retry, and structured partial/unknown commit results; direct writers that bypass the helper are outside the mutual-exclusion guarantee.
 
 ## 9. Open architecture questions
 
@@ -233,7 +236,7 @@ Resolve before migration/implementation:
 - Which repository becomes the canonical source for the **future unified** Skill?
 - What reusable subset of the audited local distribution is imported first?
 - What metadata records the last fully reconciled Hub state (`hub_project_sha` or equivalent)?
-- What exact local concurrency implementation realizes the M1.3 safe-write contract after review?
+- Does the revised M1.3 safe-write contract pass final L1–L12 approval, and which platform primitives satisfy it on supported Windows/NTFS environments?
 - What exact executable three-way reconciliation mechanism implements the approved semantic B/R/L rules?
 - What exact milestone/shared-state trigger causes a Hub publication?
 - What privacy-classification/detection mechanism implements P0/P1/P2/P3/UNCLASSIFIED safely?
@@ -269,7 +272,7 @@ Status values are only `DONE`, `ACTIVE`, `PLANNED`, `BLOCKED`, `DEFERRED`, `REJE
 | --- | --- | --- | --- | --- | --- | --- |
 | M1.1 | Authority model by information scope | DONE | M0 | every information class has one explicit owner/role; final review accepts R1–R12 | `docs/proposals/UNIFIED_AUTHORITY_MODEL.md`; initial review; final approval; `ADR-0001` | 2026-08-26 |
 | M1.2 | Field-level local/Hub mapping | DONE | M1.1 | owner, writer, readers, publish direction, conflict rule, provenance, privacy/classification, retention/deletion and reconciliation scope defined; final review accepts R1–R12 | `docs/proposals/UNIFIED_AUTHORITY_MODEL.md`; initial review; final approval; `ADR-0001` | 2026-08-26 |
-| M1.3 | Local multi-session safe-write semantics | ACTIVE | M1.2 | lost-update prevention specified for shared local mutable files and concurrent ID allocation; review accepts L1–L12 | `docs/proposals/LOCAL_MULTI_SESSION_SAFE_WRITE.md` | 2026-08-26 |
+| M1.3 | Local multi-session safe-write semantics | ACTIVE | M1.2 | no-lost-update cooperative-writer contract, canonical resource identity, bounded retry, atomic replace/no-replace, ID allocation, index repair boundaries, multi-lock cleanup and partial/unknown commit recovery specified; final review accepts revised L1–L12 | `docs/proposals/LOCAL_MULTI_SESSION_SAFE_WRITE.md`; `docs/reviews/2026-08-26-local-multi-session-safe-write-review.md` | 2026-08-26 |
 | M1.4 | Unified remote refresh/reconcile semantics | PLANNED | M1.2 | executable-oriented B/R/L three-way behavior deterministic within shared-checkpoint schema | — | — |
 | M1.5 | Hub adapter vs transport boundary | PLANNED | M0.6 | mailbox/snapshot semantics cannot be confused with Hub checkpoint sync | — | — |
 | M1.6 | Privacy / never-publish classes | PLANNED | M1.2 | classification/detection/purge behavior implements P0/P1/P2/P3/UNCLASSIFIED rules safely | — | — |
@@ -307,7 +310,7 @@ Status values are only `DONE`, `ACTIVE`, `PLANNED`, `BLOCKED`, `DEFERRED`, `REJE
 | --- | --- | --- | --- | --- | --- | --- |
 | M4.1a | Remote stale-SHA protocol specified/static-validated | DONE | M0.3 | protocol consistency passes static regression | `tests/results/v0.1.0-static-regression.md` | 2026-08-26 |
 | M4.1b | Remote stale-SHA behavior live-validated | PLANNED | M4.1a | defined two-session live test passes | `tests/LIVE_CONCURRENCY_TEST.md` (procedure only) | — |
-| M4.2 | Local safe concurrent-write design | PLANNED | M1.3 | CURRENT/index shared writes have deterministic no-lost-update semantics | — | — |
+| M4.2 | Local safe concurrent-write design | PLANNED | M1.3 | accepted M1.3 contract is translated into executable design including canonical identity, atomic install, bounded retry and partial recovery | — | — |
 | M4.3 | Executable local multi-session conflict tests | BLOCKED | M4.2 | controlled concurrent fixtures pass | — | — |
 | M4.4 | Local-vs-remote divergence tests | PLANNED | M1.4, M3 | compatible and conflicting shared projections behave as specified | — | — |
 | M4.5 | Three-session stress scenario | PLANNED | M4.3, M4.4 | A/B/C concurrent compatible updates produce no lost update | — | — |
@@ -345,6 +348,11 @@ Status values are only `DONE`, `ACTIVE`, `PLANNED`, `BLOCKED`, `DEFERRED`, `REJE
 - `REJECTED` — blindly allow local active state to overwrite newer shared Hub state.
 - `REJECTED` — use full-tree/local-file bidirectional synchronization as Hub checkpoint reconciliation.
 - `REJECTED` — allow P3 or UNCLASSIFIED material to enter Project Memory promotion.
+- `REJECTED` — treat pre-write refresh alone as sufficient local concurrency protection without a commit-time primitive.
+- `REJECTED` — claim local no-lost-update mutual exclusion against non-cooperative direct writers.
+- `REJECTED` — fall back from failed atomic replace/install to truncating or in-place overwrite.
+- `REJECTED` — treat all index content as safely reconstructible.
+- `REJECTED` — silently roll back partially committed multi-resource operations using stale snapshots.
 - `PAUSED` — nominal `0.2.0` implementation before the unified architecture/source model is approved.
 - `PAUSED` — migrate real `.ai/` trees before synthetic migration/rollback tests exist.
 
