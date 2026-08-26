@@ -1,14 +1,16 @@
 ---
 document_role: architecture-proposal
-status: review-required
+status: approved-proposal
 normative: false
-architecture_state: proposed-unreleased
+architecture_state: accepted-unreleased
 runtime_load_policy: maintenance-only
 milestone: M1.3
 created: 2026-08-26
-last_reviewed: 2026-08-26
-review_state: clarifications-integrated-final-approval-pending
+last_reviewed: 2026-08-27
+review_state: final-approved-promoted-to-adr
 review_record: docs/reviews/2026-08-26-local-multi-session-safe-write-review.md
+final_review_record: docs/reviews/2026-08-27-local-multi-session-safe-write-final-approval.md
+approved_by: docs/decisions/ADR-0002-local-multi-session-safe-write.md
 depends_on:
   - docs/decisions/ADR-0001-unified-authority-and-memory-boundary.md
 ---
@@ -25,11 +27,12 @@ This is not released behavior. The currently deployed local Project Memory imple
 
 Review state:
 
-- first M1.3 review completed;
-- L1/L4/L6/L10/L11/L12 approved;
-- L2/L3/L5/L7/L8/L9 required revision;
-- five blocking defects were identified and the required clarifications are integrated below;
-- final L1–L12 approval remains pending.
+- M1.3 final review completed on 2026-08-27;
+- L1–L12 approved;
+- B1–B5 closed;
+- no new blocking defects were identified;
+- the accepted semantics were promoted to `ADR-0002`;
+- architecture approval does not imply `EXECUTABLE` or `LIVE_VALIDATED` status.
 
 ## 1. Safety boundary
 
@@ -554,7 +557,7 @@ The local safe-write design is unacceptable if any of these can occur silently:
 
 ## 15. Revised acceptance decisions
 
-Final M1.3 review should explicitly approve or revise:
+Final M1.3 review explicitly accepted:
 
 - **L1:** every guarded local write uses an expected-base exact-byte content hash/token;
 - **L2:** cooperative writers derive one canonical resource identity/lock key, and a short per-resource commit lock protects only fresh-read/compare/validate/atomic-write classification; ambiguous path aliases fail closed;
@@ -590,5 +593,7 @@ These are implementation/schema/test decisions after M1.3 architecture approval.
 
 - `docs/decisions/ADR-0001-unified-authority-and-memory-boundary.md`
 - `docs/reviews/2026-08-26-local-multi-session-safe-write-review.md`
+- `docs/reviews/2026-08-27-local-multi-session-safe-write-final-approval.md`
+- `docs/decisions/ADR-0002-local-multi-session-safe-write.md`
 
-A final review should remain scoped to M1.3 and determine whether L1–L12, as revised above, are approved without new blocking defects.
+The accepted architecture is recorded in `ADR-0002`. This proposal remains non-normative and does not establish executable or live-validated behavior.
