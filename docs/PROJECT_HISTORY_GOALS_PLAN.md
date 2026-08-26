@@ -20,6 +20,7 @@ evidence_baseline:
   - docs/reviews/2026-08-26-unified-authority-model-review.md
   - docs/reviews/2026-08-26-unified-authority-model-final-approval.md
   - docs/decisions/ADR-0001-unified-authority-and-memory-boundary.md
+  - docs/proposals/LOCAL_MULTI_SESSION_SAFE_WRITE.md
 ---
 
 # Project Memory Skill — History, Goals, Plan, and Status
@@ -124,7 +125,7 @@ The project is converging on **one Skill with two memory domains**, not two comp
                     +--------- reconcile --------+
 ```
 
-M1.1/M1.2 authority and field-boundary decisions are now accepted in `ADR-0001`. The wider unified architecture remains unreleased and incomplete: M1.3–M1.8, source/version decisions, implementation, migration, and validation still remain.
+M1.1/M1.2 authority and field-boundary decisions are accepted in `ADR-0001`. The wider unified architecture remains unreleased and incomplete: M1.3–M1.8, source/version decisions, implementation, migration, and validation still remain.
 
 The accepted ADR does not override current released `0.1.0` Hub behavior or the current deployed local behavior until an explicit later release/migration is approved.
 
@@ -211,6 +212,7 @@ A capability may be `EXECUTABLE` but not `LIVE_VALIDATED`, or `PROTOCOL_ONLY` ye
 - **H6 — governance review.** The project-management document itself was corrected so proposed architecture, released behavior, maturity, evidence, and runtime state cannot silently become a second specification/source of truth.
 - **H7 — M1 authority/boundary review.** Architecture direction was accepted with no blocking defect; six required clarifications were identified and integrated: roadmap evidence, field-policy inheritance, retention/deletion, P3 hard block, unclassified fail-closed default, and shared-checkpoint reconciliation scope.
 - **H8 — M1.1/M1.2 final approval and ADR promotion.** R1–R12 were approved, M1.1/M1.2 were approved with no blocking defects, and the accepted architecture was promoted to `ADR-0001`. No current runtime/released behavior was changed.
+- **H9 — M1.3 local concurrency design started.** A proposal was drafted for optimistic per-file content hashes plus a short commit-time filesystem lock, stale-write rejection/rebase, atomic replace, concurrent DEC/EXP ID protection, and conservative no-lost-update behavior without requiring Git.
 
 ## 8. Planning decisions
 
@@ -231,7 +233,7 @@ Resolve before migration/implementation:
 - Which repository becomes the canonical source for the **future unified** Skill?
 - What reusable subset of the audited local distribution is imported first?
 - What metadata records the last fully reconciled Hub state (`hub_project_sha` or equivalent)?
-- What local concurrency primitive prevents lost updates when several Codex sessions write `.ai/CURRENT.md` / indexes?
+- What exact local concurrency implementation realizes the M1.3 safe-write contract after review?
 - What exact executable three-way reconciliation mechanism implements the approved semantic B/R/L rules?
 - What exact milestone/shared-state trigger causes a Hub publication?
 - What privacy-classification/detection mechanism implements P0/P1/P2/P3/UNCLASSIFIED safely?
@@ -267,7 +269,7 @@ Status values are only `DONE`, `ACTIVE`, `PLANNED`, `BLOCKED`, `DEFERRED`, `REJE
 | --- | --- | --- | --- | --- | --- | --- |
 | M1.1 | Authority model by information scope | DONE | M0 | every information class has one explicit owner/role; final review accepts R1–R12 | `docs/proposals/UNIFIED_AUTHORITY_MODEL.md`; initial review; final approval; `ADR-0001` | 2026-08-26 |
 | M1.2 | Field-level local/Hub mapping | DONE | M1.1 | owner, writer, readers, publish direction, conflict rule, provenance, privacy/classification, retention/deletion and reconciliation scope defined; final review accepts R1–R12 | `docs/proposals/UNIFIED_AUTHORITY_MODEL.md`; initial review; final approval; `ADR-0001` | 2026-08-26 |
-| M1.3 | Local multi-session safe-write semantics | PLANNED | M1.2 | lost-update prevention specified for shared local mutable files | — | — |
+| M1.3 | Local multi-session safe-write semantics | ACTIVE | M1.2 | lost-update prevention specified for shared local mutable files and concurrent ID allocation; review accepts L1–L12 | `docs/proposals/LOCAL_MULTI_SESSION_SAFE_WRITE.md` | 2026-08-26 |
 | M1.4 | Unified remote refresh/reconcile semantics | PLANNED | M1.2 | executable-oriented B/R/L three-way behavior deterministic within shared-checkpoint schema | — | — |
 | M1.5 | Hub adapter vs transport boundary | PLANNED | M0.6 | mailbox/snapshot semantics cannot be confused with Hub checkpoint sync | — | — |
 | M1.6 | Privacy / never-publish classes | PLANNED | M1.2 | classification/detection/purge behavior implements P0/P1/P2/P3/UNCLASSIFIED rules safely | — | — |
