@@ -1,14 +1,16 @@
 ---
 document_role: architecture-proposal
-status: review-required
+status: approved-proposal
 normative: false
-architecture_state: proposed-unreleased
+architecture_state: accepted-unreleased
 runtime_load_policy: maintenance-only
 milestone: M1.4
 created: 2026-08-27
 last_reviewed: 2026-08-27
-review_state: clarifications-integrated-final-approval-pending
+review_state: final-approved-promoted-to-adr
 review_record: docs/reviews/2026-08-27-remote-refresh-reconciliation-review.md
+final_review_record: docs/reviews/2026-08-27-remote-refresh-reconciliation-final-approval.md
+approved_by: docs/decisions/ADR-0003-remote-refresh-and-reconciliation-state-machine.md
 depends_on:
   - docs/decisions/ADR-0001-unified-authority-and-memory-boundary.md
   - docs/decisions/ADR-0002-local-multi-session-safe-write.md
@@ -926,7 +928,7 @@ Remote CAS still protects remote checkpoint revision races; local safe-write sti
 
 ## 19. Revised review decisions requested for M1.4
 
-Final review should explicitly approve or revise:
+Final review approved all of the following decisions:
 
 - **RR1:** `B` is exactly the semantic checkpoint in canonical local pair `P=(B,reconciled_sha)`; a SHA without trustworthy matching B content is not a valid base.
 - **RR2:** `observed_sha` means remote observation only, may differ from `reconciled_sha`, and `ABSENT` observation does not imply reconciliation or first initialization.
@@ -964,8 +966,10 @@ Deferred deliberately:
 
 - `docs/decisions/ADR-0001-unified-authority-and-memory-boundary.md`
 - `docs/decisions/ADR-0002-local-multi-session-safe-write.md`
+- `docs/decisions/ADR-0003-remote-refresh-and-reconciliation-state-machine.md`
 - `docs/concurrency.md`
 - `docs/reviews/2026-08-27-remote-refresh-reconciliation-review.md`
+- `docs/reviews/2026-08-27-remote-refresh-reconciliation-final-approval.md`
 - `tests/results/v0.1.0-static-regression.md`
 
-This proposal should be reviewed strictly as M1.4 remote reconciliation semantics. Approval must not be interpreted as executable or live validation.
+M1.4 final review approved RR1–RR14, closed B1–B4, identified no new blocking defects, and promoted the accepted semantics to `ADR-0003`. This approval must not be interpreted as executable or live validation.
