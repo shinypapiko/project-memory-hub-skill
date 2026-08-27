@@ -1,14 +1,18 @@
 ---
 document_role: architecture-proposal
-status: review-required
+status: approved-proposal
 normative: false
-architecture_state: proposed-unreleased
+architecture_state: accepted-unreleased
 runtime_load_policy: maintenance-only
 milestone: M1.5
 created: 2026-08-27
 last_reviewed: 2026-08-27
-review_state: clarifications-integrated-final-review-pending
+review_state: final-approved-promoted-to-adr
 initial_review_baseline: 0b7cebe64b26f91df40be23e44fa2b786e6a2655
+final_review_baseline: 7ce8b596b225a84e7247315210adc17587394ffa
+reviewed_proposal_sha256: 8B32662148AE134610DB946526375F556BB1E4A82D36C372051AC05F5E3E602F
+final_approval: docs/reviews/2026-08-27-hub-adapter-transport-boundary-final-approval.md
+approved_by: docs/decisions/ADR-0004-hub-adapter-and-transport-boundary.md
 depends_on:
   - docs/decisions/ADR-0001-unified-authority-and-memory-boundary.md
   - docs/decisions/ADR-0002-local-multi-session-safe-write.md
@@ -43,7 +47,7 @@ M1.5 is specifically about:
 - failure/result namespaces;
 - compatibility boundaries.
 
-The initial review at `main@0b7cebe64b26f91df40be23e44fa2b786e6a2655` approved TB1/TB4/TB5/TB6/TB7/TB9/TB11/TB14/TB15, required revision of TB2/TB3/TB8/TB10/TB12/TB13, and identified three blocking defects: remote resource ownership, shared Git transaction-domain isolation, and cross-layer project binding. This revision addresses those defects while preserving the scope above. Formal M1.5 approval remains pending final review.
+The initial review at `main@0b7cebe64b26f91df40be23e44fa2b786e6a2655` approved TB1/TB4/TB5/TB6/TB7/TB9/TB11/TB14/TB15, required revision of TB2/TB3/TB8/TB10/TB12/TB13, and identified three blocking defects: remote resource ownership, shared Git transaction-domain isolation, and cross-layer project binding. The revision at `main@7ce8b596b225a84e7247315210adc17587394ffa` addressed those defects. Final review approved TB1–TB15, closed B1–B3, found no blocking defects, and approved M1.5 for ADR promotion. The accepted decision is recorded in `ADR-0004`; this proposal remains non-normative and unreleased.
 
 ## 1. Baseline facts this proposal preserves
 
@@ -493,41 +497,43 @@ The design is invalid if any of the following occurs silently:
 19. an automatic transport→local→adapter bridge proceeds when canonical workspace identity, transport identity, and adapter target identity are missing, ambiguous, or inconsistent;
 20. future `TRANSPORT_*` result taxonomy is described as an already-implemented structured-result contract of the current `transport_tool.py`.
 
-## 13. Initial review defects addressed by this revision
+## 13. Initial review defects and final closure
 
 ### B1 — Remote resource ownership
 
-Addressed by section 3.4 and the corresponding capability/invariant changes. Remote resources are now partitioned into transport mailbox resources, adapter checkpoint/state resources, Runtime Hub registry/routing resources, and project-container/shared infrastructure resources. Each class has writer/reader boundaries, conflict semantics, and fail-closed conditions. Final physical paths remain deferred.
+Addressed by section 3.4 and the corresponding capability/invariant changes. Remote resources are partitioned into transport mailbox resources, adapter checkpoint/state resources, Runtime Hub registry/routing resources, and project-container/shared infrastructure resources. Each class has writer/reader boundaries, conflict semantics, and fail-closed conditions. Final physical paths remain deferred.
 
 ### B2 — Shared Git transaction domain
 
-Addressed by section 7.3. Logical namespaces no longer imply Git operational isolation. A shared clone/worktree/ref is acceptable only if operation isolation, owned-resource scope, no cross-subsystem staging/commit/push, revision revalidation, and dirty/unknown/ahead fail-closed behavior can be proven. Otherwise the later implementation must isolate the Git transaction domain or stop.
+Addressed by section 7.3. Logical namespaces do not imply Git operational isolation. A shared clone/worktree/ref is acceptable only if operation isolation, owned-resource scope, no cross-subsystem staging/commit/push, revision revalidation, and dirty/unknown/ahead fail-closed behavior can be proven. Otherwise the later implementation must isolate the Git transaction domain or stop.
 
 ### B3 — Cross-layer project binding
 
 Addressed by sections 7.2, 7.4, and 9.1. Transport identity is explicitly non-canonical. Any automatic transport→local→adapter bridge requires consistent stable identity across canonical workspace binding, transport claim, and adapter target; missing/ambiguous/mismatched identity blocks the bridge with a typed binding conflict. Paths/channels/directories cannot substitute for identity.
 
-These are proposal-level closures pending final-review confirmation; they do not claim executable implementation or live validation.
+Final review confirmed **B1 CLOSED, B2 CLOSED, B3 CLOSED**, with no new blocking defects.
 
-## 14. Decisions requested for M1.5 final review
+## 14. Final approval disposition
 
-Final review should approve or revise these decisions:
+Final review approved all fifteen M1.5 decisions:
 
-- **TB1:** existing transport and future Hub adapter are independent semantic subsystems with different authority and lifecycle. **Initial-review disposition: APPROVE; unchanged in intent.**
-- **TB2:** transport owns mailbox/handoff/receipt/non-canonical snapshot semantics and its transport resource classes only; adapter owns shared-checkpoint observation/reconciliation/finalization and adapter resource classes only; Runtime Hub registry/routing and shared infrastructure remain separately owned resource classes rather than generic adapter storage. **Revised for B1.**
-- **TB3:** transport state and adapter state use independent logical namespaces, equal-looking IDs/SHAs never imply semantic equivalence, and namespace separation does not by itself establish remote-resource ownership, Git transaction isolation, or project identity. **Revised for B1/B2/B3.**
-- **TB4:** transport receive produces only a handoff/proposal input; it cannot advance `B`, `observed_sha`, `reconciled_sha`, or adapter finalization state. **Initial-review disposition: APPROVE; unchanged in intent.**
-- **TB5:** transport receipt/ack proves message lifecycle only and cannot confirm checkpoint CAS, exact revision, or reconciliation. **Initial-review disposition: APPROVE; unchanged in intent.**
-- **TB6:** transport CURRENT snapshot remains non-canonical and cannot serve as checkpoint/hydration/recovery base. **Initial-review disposition: APPROVE; unchanged in intent.**
-- **TB7:** transport `publish` and future shared-checkpoint publication are distinct operations; neither is a fallback for the other. **Initial-review disposition: APPROVE; unchanged in intent.**
-- **TB8:** semantics-neutral Git/filesystem plumbing may be reused only with typed callers/results, explicit remote-resource ownership, and proven shared Git transaction-domain isolation; a shared helper must not stage/commit/push another subsystem's resources or translate one subsystem's success into another's semantic success. **Revised for B2.**
-- **TB9:** adapter unavailable/failed/unknown and transport unavailable/failed/unknown remain separate typed outcomes with no silent fallback; symbolic `TRANSPORT_*` names in this proposal are future unified-interface taxonomy, not claims about current `transport_tool.py` output. **Initial-review disposition: APPROVE; clarified without changing intent.**
-- **TB10:** received transport content may reach Hub only through validate/adopt into local canonical memory, then later explicit shared projection/publication; any automatic bridge must also prove canonical workspace binding, transport identity, and adapter target identity agree; direct transport-to-checkpoint passthrough is forbidden. **Revised for B3.**
-- **TB11:** local session history, Hub shared trace, transport receipt history, and shared checkpoint are separate record classes; references may connect them without transferring authority. **Initial-review disposition: APPROVE; unchanged in intent.**
-- **TB12:** capability/config discovery must identify `transport` and `hub_adapter` independently, while project identity is validated through the separate canonical binding/routing authority; transport config/envelope `project_id`, a generic untyped `hub enabled` state, `hub_project_path`, channel name, or directory similarity is insufficient to establish adapter target identity. **Revised for B3.**
-- **TB13:** physical config/worktree co-location is permitted only if logical namespaces remain typed **and** any shared Git transaction domain can prove operation isolation, owned-resource commit scope, no cross-subsystem staging/commit/push, head/revision revalidation, and fail-closed handling of unknown/dirty/ahead state; otherwise use an isolated topology or stop. **Revised for B2.**
-- **TB14:** existing transport remains current executable behavior until an explicit compatibility/release decision; M1.5 does not turn `transport_tool.py` into the adapter. **Initial-review disposition: APPROVE; unchanged in intent.**
-- **TB15:** M1.5 remains architecture/protocol-only and does not define adapter code, API/credentials, publication triggers, executable privacy gates, M1.7 recovery workflow, migration, or real-data movement. **Initial-review disposition: APPROVE; unchanged in intent.**
+- **TB1 APPROVE:** existing transport and future Hub adapter are independent semantic subsystems with different authority and lifecycle.
+- **TB2 APPROVE:** transport owns mailbox/handoff/receipt/non-canonical snapshot semantics and its transport resource classes only; adapter owns shared-checkpoint observation/reconciliation/finalization and adapter resource classes only; Runtime Hub registry/routing and shared infrastructure remain separately owned resource classes rather than generic adapter storage.
+- **TB3 APPROVE:** transport state and adapter state use independent logical namespaces, equal-looking IDs/SHAs never imply semantic equivalence, and namespace separation does not by itself establish remote-resource ownership, Git transaction isolation, or project identity.
+- **TB4 APPROVE:** transport receive produces only a handoff/proposal input; it cannot advance `B`, `observed_sha`, `reconciled_sha`, or adapter finalization state.
+- **TB5 APPROVE:** transport receipt/ack proves message lifecycle only and cannot confirm checkpoint CAS, exact revision, or reconciliation.
+- **TB6 APPROVE:** transport CURRENT snapshot remains non-canonical and cannot serve as checkpoint/hydration/recovery base.
+- **TB7 APPROVE:** transport `publish` and future shared-checkpoint publication are distinct operations; neither is a fallback for the other.
+- **TB8 APPROVE:** semantics-neutral Git/filesystem plumbing may be reused only with typed callers/results, explicit remote-resource ownership, and proven shared Git transaction-domain isolation; a shared helper must not stage/commit/push another subsystem's resources or translate one subsystem's success into another's semantic success.
+- **TB9 APPROVE:** adapter unavailable/failed/unknown and transport unavailable/failed/unknown remain separate typed outcomes with no silent fallback; symbolic `TRANSPORT_*` names in this proposal are future unified-interface taxonomy, not claims about current `transport_tool.py` output.
+- **TB10 APPROVE:** received transport content may reach Hub only through validate/adopt into local canonical memory, then later explicit shared projection/publication; any automatic bridge must also prove canonical workspace binding, transport identity, and adapter target identity agree; direct transport-to-checkpoint passthrough is forbidden.
+- **TB11 APPROVE:** local session history, Hub shared trace, transport receipt history, and shared checkpoint are separate record classes; references may connect them without transferring authority.
+- **TB12 APPROVE:** capability/config discovery must identify `transport` and `hub_adapter` independently, while project identity is validated through the separate canonical binding/routing authority; transport config/envelope `project_id`, a generic untyped `hub enabled` state, `hub_project_path`, channel name, or directory similarity is insufficient to establish adapter target identity.
+- **TB13 APPROVE:** physical config/worktree co-location is permitted only if logical namespaces remain typed and any shared Git transaction domain can prove operation isolation, owned-resource commit scope, no cross-subsystem staging/commit/push, head/revision revalidation, and fail-closed handling of unknown/dirty/ahead state; otherwise use an isolated topology or stop.
+- **TB14 APPROVE:** existing transport remains current executable behavior until an explicit compatibility/release decision; M1.5 does not turn `transport_tool.py` into the adapter.
+- **TB15 APPROVE:** M1.5 remains architecture/protocol-only and does not define adapter code, API/credentials, publication triggers, executable privacy gates, M1.7 recovery workflow, migration, or real-data movement.
+
+The normative accepted architecture decision is `ADR-0004`.
 
 ## 15. Deferred implementation choices
 
@@ -553,7 +559,10 @@ Deliberately deferred:
 - `docs/decisions/ADR-0001-unified-authority-and-memory-boundary.md`
 - `docs/decisions/ADR-0002-local-multi-session-safe-write.md`
 - `docs/decisions/ADR-0003-remote-refresh-and-reconciliation-state-machine.md`
+- `docs/reviews/2026-08-27-hub-adapter-transport-boundary-final-approval.md`
+- `docs/decisions/ADR-0004-hub-adapter-and-transport-boundary.md`
 - `skill/SKILL.md` and release metadata for current `0.1.0` behavior
 - M1.5 initial review at `main@0b7cebe64b26f91df40be23e44fa2b786e6a2655`
+- M1.5 final review at `main@7ce8b596b225a84e7247315210adc17587394ffa`, reviewed proposal SHA-256 `8B32662148AE134610DB946526375F556BB1E4A82D36C372051AC05F5E3E602F`
 
-This proposal is an M1.5 boundary specification only. Approval must not be interpreted as adapter implementation, runtime effectiveness, migration completion, or validation.
+This proposal remains **non-normative**. `ADR-0004` carries the accepted architecture decision. M1.5 approval does not imply adapter implementation, runtime effectiveness, migration completion, `STATIC_VALIDATED`, or `LIVE_VALIDATED` status.
