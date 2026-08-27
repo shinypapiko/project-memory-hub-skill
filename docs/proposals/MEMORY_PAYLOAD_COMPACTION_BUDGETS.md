@@ -1,15 +1,19 @@
 ---
 document_role: architecture-proposal
-status: review-required
+status: approved-proposal
 normative: false
-architecture_state: proposed-unreleased
+architecture_state: accepted-unreleased
 runtime_load_policy: maintenance-only
 milestone: M1.8
 created: 2026-08-27
 last_reviewed: 2026-08-27
-review_state: blocking-clarification-integrated-final-review-pending
+review_state: final-approved-promoted-to-adr
 initial_review_baseline: 8bd7ac87cc903aae9fafcdce03ded1fbccc719a7
 initial_review_proposal_git_blob_lf_sha256: A1A409AC5D2D2D15367470DB401D1115F5E118DE42621463BDAE918E97BAAEA1
+final_review_baseline: 009b379f3f978223c1e28ad4906872ed9f4a6c48
+final_review_proposal_git_blob_lf_sha256: B8713A83AC6A980A827014517DAD7CD4A6858D2F190F0C1BC3B57B3E9CBFCCE1
+final_approval: docs/reviews/2026-08-27-memory-payload-compaction-budgets-final-approval.md
+approved_by: docs/decisions/ADR-0007-memory-payload-compaction-budgets.md
 depends_on:
   - docs/decisions/ADR-0001-unified-authority-and-memory-boundary.md
   - docs/decisions/ADR-0002-local-multi-session-safe-write.md
