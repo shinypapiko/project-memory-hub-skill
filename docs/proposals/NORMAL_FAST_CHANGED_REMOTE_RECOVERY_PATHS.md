@@ -1,15 +1,19 @@
 ---
 document_role: architecture-proposal
-status: review-required
+status: approved-proposal
 normative: false
-architecture_state: proposed-unreleased
+architecture_state: accepted-unreleased
 runtime_load_policy: maintenance-only
 milestone: M1.7
 created: 2026-08-27
 last_reviewed: 2026-08-27
-review_state: blocking-clarification-integrated-final-review-pending
+review_state: final-approved-promoted-to-adr
 initial_review_baseline: a83b76b8aa3d5d2392f46c3ed60529a19070c31e
 initial_review_proposal_git_blob_lf_sha256: E52FC276D7C2537D0E1A74063E2A3057FA74CEC6AAEE5BE7EB6F9A5ADEDF9485
+final_review_baseline: df290fc9489790a1d20a209e3bf16c4e0766e90a
+final_review_proposal_git_blob_lf_sha256: ED5BC5ECD399960A2469EB9D24AF53264E06F01AFA0911928C2897E82294C085
+final_approval: docs/reviews/2026-08-27-normal-fast-changed-remote-recovery-final-approval.md
+approved_by: docs/decisions/ADR-0006-normal-fast-changed-remote-recovery-paths.md
 depends_on:
   - docs/decisions/ADR-0001-unified-authority-and-memory-boundary.md
   - docs/decisions/ADR-0002-local-multi-session-safe-write.md
@@ -802,4 +806,26 @@ This proposal depends on and preserves:
 - `ADR-0004` — transport/Hub-adapter separation, resource identity, and no fallback;
 - `ADR-0005` — destination-aware privacy and current privacy-before-write gate.
 
-This document is a proposal only. It is `normative:false`, `proposed-unreleased`, and `blocking-clarification-integrated-final-review-pending`. It creates no runtime-effective behavior, implements no adapter, performs no migration, establishes no M1.8 budget, validates no implementation, and authorizes no real-data operation.
+## 18. Final review and promotion
+
+Final review was performed against the frozen revised baseline:
+
+```text
+commit:
+df290fc9489790a1d20a209e3bf16c4e0766e90a
+
+proposal Git blob LF SHA-256:
+ED5BC5ECD399960A2469EB9D24AF53264E06F01AFA0911928C2897E82294C085
+```
+
+Final verdict:
+
+```text
+FP1–FP14: APPROVE
+B1: CLOSED
+blocking defects: NONE
+required changes before ADR promotion: NONE
+M1.7: APPROVE
+```
+
+The normative accepted decision is now `ADR-0006`. This proposal remains non-normative and `accepted-unreleased`. M1.7 approval changes no runtime behavior and does not imply executable probe/adapter/recovery behavior, migration, static validation, or live validation.
