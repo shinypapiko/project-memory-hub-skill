@@ -1,13 +1,18 @@
 ---
 document_role: architecture-proposal
-status: review-required
+status: approved-proposal
 normative: false
-architecture_state: proposed-unreleased
+architecture_state: accepted-unreleased
 runtime_load_policy: maintenance-only
 milestone: M1.6
 created: 2026-08-27
 last_reviewed: 2026-08-27
-review_state: initial-review-pending
+review_state: final-approved-promoted-to-adr
+initial_review_baseline: 1ef9f4b69d699e79cf02314787acb10d82d4c303
+final_review_baseline: 1ef9f4b69d699e79cf02314787acb10d82d4c303
+reviewed_proposal_git_blob_lf_sha256: 91916BE03E68AEE652265CC33761D0FB375C2A2E1D3ED26DAE8DC85760C4CF69
+final_approval: docs/reviews/2026-08-27-privacy-never-publish-policy-final-approval.md
+approved_by: docs/decisions/ADR-0005-privacy-never-publish-policy.md
 depends_on:
   - docs/decisions/ADR-0001-unified-authority-and-memory-boundary.md
   - docs/decisions/ADR-0002-local-multi-session-safe-write.md
@@ -662,4 +667,4 @@ In particular:
 - ADR-0003 remains authoritative for B/R/L/C concurrency/reconciliation after privacy allows a candidate to enter the write-capable path;
 - ADR-0004 remains authoritative for separation between transport mailbox semantics and Hub adapter/shared-checkpoint semantics.
 
-This document is a proposal only. It is `normative:false`, `proposed-unreleased`, and `initial-review-pending`. It creates no runtime-effective behavior, performs no migration, validates no implementation, and authorizes no real-data publication.
+This document is an approved proposal. It remains `normative:false` and `accepted-unreleased`; the accepted decision is recorded normatively in ADR-0005. M1.6 approval creates no runtime-effective behavior, performs no migration, validates no implementation, and authorizes no real-data publication.
