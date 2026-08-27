@@ -26,6 +26,8 @@ evidence_baseline:
   - docs/decisions/ADR-0002-local-multi-session-safe-write.md
   - docs/proposals/REMOTE_REFRESH_RECONCILIATION_STATE_MACHINE.md
   - docs/reviews/2026-08-27-remote-refresh-reconciliation-review.md
+  - docs/reviews/2026-08-27-remote-refresh-reconciliation-final-approval.md
+  - docs/decisions/ADR-0003-remote-refresh-and-reconciliation-state-machine.md
 ---
 
 # Project Memory Skill — History, Goals, Plan, and Status
@@ -130,7 +132,7 @@ The project is converging on **one Skill with two memory domains**, not two comp
                     +--------- reconcile --------+
 ```
 
-M1.1/M1.2 authority and field-boundary decisions are accepted in `ADR-0001`. M1.3 local multi-session safe-write semantics are accepted in `ADR-0002`. The wider unified architecture remains unreleased and incomplete: M1.4–M1.8, source/version decisions, implementation, migration, and validation still remain.
+M1.1/M1.2 authority and field-boundary decisions are accepted in `ADR-0001`. M1.3 local multi-session safe-write semantics are accepted in `ADR-0002`. M1.4 remote refresh/reconciliation semantics are accepted in `ADR-0003`. The wider unified architecture remains unreleased and incomplete: M1.5–M1.8, source/version decisions, implementation, migration, and validation still remain.
 
 The accepted ADRs do not override current released `0.1.0` Hub behavior or the current deployed local behavior until an explicit later release/migration is approved.
 
@@ -221,11 +223,12 @@ A capability may be `EXECUTABLE` but not `LIVE_VALIDATED`, or `PROTOCOL_ONLY` ye
 - **H10 — M1.3 first review.** L1/L4/L6/L10/L11/L12 were approved; L2/L3/L5/L7/L8/L9 required revision. Five blocking defects were identified around cooperative-writer scope/canonical resource identity, bounded liveness and multi-lock cleanup, Windows/atomic-install failure classification, INDEX repairability, and partial multi-resource completion. The eight required clarifications were integrated into the proposal.
 - **H11 — M1.3 final approval and ADR promotion.** Revised L1–L12 were all approved, B1–B5 were all closed, no new blocking defect was identified, and the accepted local safe-write architecture was promoted to `ADR-0002`. The future unified capability remains `PROTOCOL_ONLY` / `UNVALIDATED`; no current runtime/released behavior was changed.
 - **H12 — M1.4 remote reconciliation design started.** The first proposal separated `observed_sha` from `reconciled_sha`, defined B/R/L/C, field-level three-way classification, CAS stale recomputation, bounded contention, conflict outcomes, unknown-commit recovery, and marker-advancement rules.
-- **H13 — M1.4 initial review and clarification revision.** RR1/RR2/RR3/RR6/RR8/RR9/RR10/RR11/RR14 were approved; RR4/RR5/RR7/RR12/RR13 required revision. Four blocking defects were identified around explicit conflict resolution, canonical local base-pair drift, post-CAS/local-finalization states, and base-loss/ABSENT semantics. The proposal now adds a context-bound resolution operation, canonical base-pair token checks and re-projection, exact commit confirmation plus guarded local finalization, and explicit present/absent/uninitialized/invalid base states. Final RR1–RR14 approval remains pending.
+- **H13 — M1.4 initial review and clarification revision.** RR1/RR2/RR3/RR6/RR8/RR9/RR10/RR11/RR14 were approved; RR4/RR5/RR7/RR12/RR13 required revision. Four blocking defects were identified around explicit conflict resolution, canonical local base-pair drift, post-CAS/local-finalization states, and base-loss/ABSENT semantics. The proposal added a context-bound resolution operation, canonical base-pair token checks and re-projection, exact commit confirmation plus guarded local finalization, and explicit present/absent/uninitialized/invalid base states.
+- **H14 — M1.4 final approval and ADR promotion.** RR1–RR14 were all approved, B1–B4 were closed, no new blocking defect was identified, and accepted remote refresh/reconciliation semantics were promoted to `ADR-0003`. The capability remains `PROTOCOL_ONLY` / `UNVALIDATED` with `runtime_effective:false`; current runtime/released behavior remains unchanged.
 
 ## 8. Planning decisions
 
-These remain planning-level unless covered by an accepted ADR. Where a planning item overlaps `ADR-0001` or `ADR-0002`, the ADR is authoritative for the accepted architecture scope.
+These remain planning-level unless covered by an accepted ADR. Where a planning item overlaps `ADR-0001`, `ADR-0002`, or `ADR-0003`, the ADR is authoritative for the accepted architecture scope.
 
 - **D-P1 — Do not build a second local-memory implementation.** Reuse/productize the existing local core.
 - **D-P2 — Keep the Hub, but narrow its proposed unified role.** Registry/routing, shared checkpoint, cross-agent/device coordination, shared trace, remote concurrency, compatibility/migration.
@@ -235,8 +238,8 @@ These remain planning-level unless covered by an accepted ADR. Where a planning 
 - **D-P6 — Shared reconciliation is semantic, not full-tree synchronization.** Accepted by `ADR-0001`; local state is projected into a minimized shared-checkpoint candidate before B/R/L reconciliation.
 - **D-P7 — Publication fails closed on privacy uncertainty.** Accepted by `ADR-0001`; P3 and UNCLASSIFIED material cannot enter Project Memory promotion, and a safe derivative must be a new independently classified object.
 - **D-P8 — Local no-lost-update is a cooperative-writer contract.** Accepted by `ADR-0002`; the target uses canonical resource identity, exact base hashes, short commit locks, atomic replace/no-replace install, bounded retry, and structured partial/unknown commit results; direct writers that bypass the helper are outside the mutual-exclusion guarantee.
-- **D-P9 — Remote observation and reconciliation are distinct.** M1.4 proposes that observing a newer remote SHA never by itself advances the reconciled base; stale CAS invalidates the old candidate and forces fresh fetch plus B/R/L recomputation.
-- **D-P10 — Remote reconciliation finalizes locally under a canonical base-pair guard.** M1.4 proposes that remote CAS success and persistent local reconciliation are separate stages; canonical local base drift invalidates old candidates/explicit resolution context, and a newer remote head may legitimately remain ahead of `reconciled_sha`.
+- **D-P9 — Remote observation and reconciliation are distinct.** Accepted by `ADR-0003`; observing a newer remote SHA never by itself advances the reconciled base, and stale CAS invalidates the old candidate and forces fresh fetch plus B/R/L recomputation.
+- **D-P10 — Remote reconciliation finalizes locally under a canonical base-pair guard.** Accepted by `ADR-0003`; remote CAS success and persistent local reconciliation are separate stages, canonical local base drift invalidates old candidates/explicit resolution context, and a newer remote head may legitimately remain ahead of `reconciled_sha`.
 
 ## 9. Open architecture questions
 
@@ -246,7 +249,7 @@ Resolve before migration/implementation:
 - What reusable subset of the audited local distribution is imported first?
 - What metadata/storage representation will implement the accepted canonical `B/reconciled_sha` pair, `base_pair_token`, `observed_sha`, and exact base-content integrity checks?
 - Which concrete platform primitives satisfy `ADR-0002` on supported Windows/NTFS environments, and how will they be executable-tested?
-- Does the revised M1.4 state machine pass final RR1–RR14 review, and what later executable mechanism will implement the accepted B/R/L/C + explicit-resolution + CAS/finalization semantics?
+- What later executable mechanism will implement `ADR-0003` B/R/L/C + explicit-resolution + CAS/confirmation/finalization semantics?
 - What exact milestone/shared-state trigger causes a Hub publication?
 - What privacy-classification/detection mechanism implements P0/P1/P2/P3/UNCLASSIFIED safely?
 - How does web/new-device recovery establish or recover trusted base lineage without making a merely observed remote state automatically reconciled?
@@ -282,12 +285,12 @@ Status values are only `DONE`, `ACTIVE`, `PLANNED`, `BLOCKED`, `DEFERRED`, `REJE
 | M1.1 | Authority model by information scope | DONE | M0 | every information class has one explicit owner/role; final review accepts R1–R12 | `docs/proposals/UNIFIED_AUTHORITY_MODEL.md`; initial review; final approval; `ADR-0001` | 2026-08-26 |
 | M1.2 | Field-level local/Hub mapping | DONE | M1.1 | owner, writer, readers, publish direction, conflict rule, provenance, privacy/classification, retention/deletion and reconciliation scope defined; final review accepts R1–R12 | `docs/proposals/UNIFIED_AUTHORITY_MODEL.md`; initial review; final approval; `ADR-0001` | 2026-08-26 |
 | M1.3 | Local multi-session safe-write semantics | DONE | M1.2 | no-lost-update cooperative-writer contract, canonical resource identity, bounded retry, atomic replace/no-replace, ID allocation, index repair boundaries, multi-lock cleanup and partial/unknown commit recovery specified; final review accepts revised L1–L12 | `docs/proposals/LOCAL_MULTI_SESSION_SAFE_WRITE.md`; initial review; final approval; `ADR-0002` | 2026-08-27 |
-| M1.4 | Unified remote refresh/reconcile semantics | ACTIVE | M1.2 | deterministic B/R/L/C state machine defines observed vs reconciled SHA, canonical local base drift, explicit conflict resolution, CAS stale recomputation, bounded contention, exact remote confirmation, guarded local finalization, conflict/unknown-commit outcomes, base-loss/ABSENT handling, and exact marker-advancement rules; final review accepts revised RR1–RR14 | `docs/proposals/REMOTE_REFRESH_RECONCILIATION_STATE_MACHINE.md`; `docs/reviews/2026-08-27-remote-refresh-reconciliation-review.md` | 2026-08-27 |
+| M1.4 | Unified remote refresh/reconcile semantics | DONE | M1.2 | deterministic B/R/L/C state machine defines observed vs reconciled SHA, canonical local base drift, explicit conflict resolution, CAS stale recomputation, bounded contention, exact remote confirmation, guarded local finalization, conflict/unknown-commit outcomes, base-loss/ABSENT handling, and exact marker-advancement rules; final review accepts revised RR1–RR14 | `docs/proposals/REMOTE_REFRESH_RECONCILIATION_STATE_MACHINE.md`; initial review; final approval; `ADR-0003` | 2026-08-27 |
 | M1.5 | Hub adapter vs transport boundary | PLANNED | M0.6 | mailbox/snapshot semantics cannot be confused with Hub checkpoint sync | — | — |
 | M1.6 | Privacy / never-publish classes | PLANNED | M1.2 | classification/detection/purge behavior implements P0/P1/P2/P3/UNCLASSIFIED rules safely | — | — |
 | M1.7 | Normal fast path vs recovery path | PLANNED | M1.2 | conditions and fallbacks explicit | — | — |
 | M1.8 | Memory payload / compaction budgets | PLANNED | M1.7 | measurable budgets and thresholds defined | — | — |
-| M1.9 | Unified Architecture Proposal approved | BLOCKED | M1.1–M1.8 | approved ADR/spec before source migration | M1.1–M1.3 accepted via `ADR-0001` / `ADR-0002`; M1.4 active after initial review; M1.5–M1.8 pending | — |
+| M1.9 | Unified Architecture Proposal approved | BLOCKED | M1.1–M1.8 | approved ADR/spec before source migration | M1.1–M1.4 accepted via `ADR-0001` / `ADR-0002` / `ADR-0003`; M1.5–M1.8 pending | — |
 
 ### M2 — canonical source and version model
 
@@ -387,7 +390,7 @@ Implementation may begin only when:
 11. rollback exists;
 12. memory/token payload is measured.
 
-M1.1 and M1.2 satisfy the authority and field-boundary portions of these criteria through `ADR-0001`; M1.3 satisfies the local cooperative-writer safe-write architecture portion through `ADR-0002`. M1.4 is active with initial review defects addressed in the proposal but final approval still pending. The overall architecture gate remains open until the remaining milestones are complete.
+M1.1 and M1.2 satisfy the authority and field-boundary portions of these criteria through `ADR-0001`; M1.3 satisfies the local cooperative-writer safe-write architecture portion through `ADR-0002`; M1.4 satisfies the deterministic remote refresh/reconciliation architecture portion through `ADR-0003`. The overall architecture gate remains open until the remaining milestones are complete.
 
 ## 14. Release gate
 
