@@ -10,7 +10,7 @@ not_canonical_for:
   - release-history
   - test-verdicts
   - runtime-project-state
-architecture_state: proposed-unreleased
+architecture_state: accepted-unreleased
 runtime_load_policy: maintenance-only
 last_reviewed: 2026-08-27
 evidence_baseline:
@@ -40,6 +40,8 @@ evidence_baseline:
   - docs/proposals/MEMORY_PAYLOAD_COMPACTION_BUDGETS.md
   - docs/reviews/2026-08-27-memory-payload-compaction-budgets-final-approval.md
   - docs/decisions/ADR-0007-memory-payload-compaction-budgets.md
+  - docs/reviews/2026-08-27-unified-architecture-final-approval.md
+  - docs/decisions/ADR-0008-canonical-source-and-version-authority.md
 ---
 
 # Project Memory Skill — History, Goals, Plan, and Status
@@ -86,14 +88,16 @@ Three different architecture states currently coexist. They are intentionally se
 
 Current released Hub behavior still defines the remote Hub project record as the authoritative project state for the Hub protocol. A substantive Hub session reads the selected remote `PROJECT.md`, records its blob SHA when available, and must refresh/reconcile before a shared write.
 
-Current canonical source scope:
+Canonical source facts:
 
-- repository: `shinypapiko/project-memory-hub-skill`
-- canonical **for**: Hub Protocol `0.1.x` reusable specification/templates/tests
-- supported Runtime Hub schema: `1`
-- not yet established as the final canonical repository for the future unified Project Memory Skill
+- repository: `shinypapiko/project-memory-hub-skill`;
+- canonical **for current release**: Hub Protocol `0.1.x` reusable specification/templates/tests;
+- supported Runtime Hub schema: `1`;
+- by `ADR-0008`, the same repository is also the canonical source location for the future unified Skill line, with `skill/` as the installable Skill source subtree.
 
-Maturity of the remote stale-SHA/reconciliation behavior:
+This source-authority decision does not change current released behavior: root `VERSION` remains `0.1.0` until actual unified implementation/source promotion begins.
+
+Maturity of the current remote stale-SHA/reconciliation behavior:
 
 - `implementation_status: PROTOCOL_ONLY`
 - `validation_status: STATIC_VALIDATED`
@@ -124,9 +128,9 @@ The installed and development/test Skill copies inspected by the audit were byte
 
 Evidence: `docs/audits/2026-08-local-project-memory-v1.1-audit-summary.md`.
 
-### 3.3 Target unified architecture — PARTIALLY ACCEPTED / UNRELEASED
+### 3.3 Target unified architecture — ACCEPTED / UNRELEASED
 
-The project is converging on **one Skill with two memory domains**, not two competing Skills:
+The project has accepted **one Skill with two memory domains**, not two competing Skills:
 
 ```text
                          Canonical Skill Source
@@ -144,9 +148,11 @@ The project is converging on **one Skill with two memory domains**, not two comp
                     +--------- reconcile --------+
 ```
 
-M1.1/M1.2 authority and field-boundary decisions are accepted in `ADR-0001`. M1.3 local multi-session safe-write semantics are accepted in `ADR-0002`. M1.4 remote refresh/reconciliation semantics are accepted in `ADR-0003`. M1.5 Hub adapter vs existing transport boundary semantics are accepted in `ADR-0004`. M1.6 deterministic privacy/classification/publication-gate semantics are accepted in `ADR-0005`. M1.7 normal-fast/changed-remote/recovery route semantics are accepted in `ADR-0006`. M1.8 measurable payload/compaction/resource-envelope semantics are accepted in `ADR-0007`. The wider unified architecture remains unreleased and incomplete: M1.9 final architecture approval, source/version decisions, implementation, migration, and validation still remain.
+M1.1/M1.2 authority and field-boundary decisions are accepted in `ADR-0001`. M1.3 local multi-session safe-write semantics are accepted in `ADR-0002`. M1.4 remote refresh/reconciliation semantics are accepted in `ADR-0003`. M1.5 Hub adapter vs existing transport boundary semantics are accepted in `ADR-0004`. M1.6 deterministic privacy/classification/publication-gate semantics are accepted in `ADR-0005`. M1.7 normal-fast/changed-remote/recovery route semantics are accepted in `ADR-0006`. M1.8 measurable payload/compaction/resource-envelope semantics are accepted in `ADR-0007`. M1.9 cross-ADR consistency review approved the combined architecture with no cross-ADR semantic conflicts or blockers.
 
-The accepted ADRs do not override current released `0.1.0` Hub behavior or the current deployed local behavior until an explicit later release/migration is approved.
+The frozen M1 architecture baseline is repository commit `36317756f3b24a04bf15458b09bba2360482f7f1`, as recorded in `docs/reviews/2026-08-27-unified-architecture-final-approval.md`. No additional M1 proposal is required; later changes to M1 semantics require an explicit superseding decision rather than reopening M1.1–M1.8 informally.
+
+The accepted architecture remains unreleased and non-runtime-effective. It does not override current released `0.1.0` Hub behavior or the current deployed local behavior until later implementation, compatibility/migration, validation, and release work occurs.
 
 ## 4. Accepted authority/boundary architecture — ADR-0001
 
@@ -177,15 +183,15 @@ Evidence:
 - `docs/reviews/2026-08-26-unified-authority-model-final-approval.md`
 - `docs/decisions/ADR-0001-unified-authority-and-memory-boundary.md`
 
-## 5. Frequency and retrieval model — proposed
+## 5. Frequency and retrieval model — accepted architecture, not released behavior
 
 - Local memory is high-frequency.
 - Hub memory is low-frequency.
 - Detailed `EXP-*`, local decision mechanics, transient debugging, and every task result must not be copied automatically into the Hub.
-- Normal healthy local startup should eventually use local LOAD plus a lightweight Hub change check, not unconditional remote full-text injection.
+- Normal healthy local startup should use local LOAD plus a lightweight exact Hub change check, not unconditional remote full-text injection.
 - Full Hub routing/recovery remains necessary for web-only agents, new devices, missing/untrusted local memory, schema mismatch, remote changes, or explicit recovery/current-state requests.
 
-Target normal path:
+Target path:
 
 ```text
 AGENTS / Skill discovery
@@ -194,14 +200,14 @@ local LOAD
         ↓
 .ai/PROJECT + CURRENT + INDEX
         ↓
-Hub sync metadata / lightweight remote check
+Hub sync metadata / exact lightweight remote check
         ↓
 remote unchanged?
    ├─ yes → continue without full Hub PROJECT injection
    └─ no  → fetch changed shared state → reconcile → continue
 ```
 
-This is proposed, not current released behavior.
+This is accepted architecture through ADR-0001–ADR-0007, but it is not current released behavior and remains `PROTOCOL_ONLY / UNVALIDATED` for the unified capability.
 
 ## 6. Maturity vocabulary
 
@@ -241,10 +247,12 @@ A capability may be `EXECUTABLE` but not `LIVE_VALIDATED`, or `PROTOCOL_ONLY` ye
 - **H16 — M1.6 privacy policy final approval and ADR promotion.** Initial and final review both approved PV1–PV16 with no blocking defects or required semantic clarifications. The deterministic destination-aware privacy/classification/publication-gate semantics were promoted to `ADR-0005`. The capability remains `PROTOCOL_ONLY` / `UNVALIDATED` with `runtime_effective:false`; M1.6 `DONE` does not imply runtime implementation, migration, or validation.
 - **H17 — M1.7 route-selection final approval and ADR promotion.** Initial review approved FP4–FP14 and identified one blocker, B1 route-selection context TOCTOU, affecting FP1–FP3. One bounded clarification added `route_selection_context`, pre-adoption authoritative-context revalidation, and discard/restart on drift. Final review approved FP1–FP14, closed B1, and promoted the three-path routing semantics to `ADR-0006`. The capability remains `PROTOCOL_ONLY` / `UNVALIDATED` with `runtime_effective:false`; M1.7 `DONE` does not imply probe, adapter, recovery runtime, migration, or validation.
 - **H18 — M1.8 budget/compaction final approval and ADR promotion.** Initial review identified B1 cumulative logical-I/O accounting and B2 post-compaction ADR-0003 re-formation. One bounded clarification added monotonic `budget_accounting_scope`, cumulative object/byte limits, Class A/Class B compaction semantics, and mandatory fresh ADR-0003/ADR-0005 formation for semantic derivatives. Final review approved MB1–MB14, closed B1/B2, and promoted the measurable resource-envelope semantics to `ADR-0007`. The capability remains `PROTOCOL_ONLY` / `UNVALIDATED` with `runtime_effective:false`; M1.8 `DONE` does not imply budgeting/compaction/probe/adapter implementation, migration, or validation.
+- **H19 — M1.9 unified architecture final approval.** A bounded consistency review of ADR-0001–ADR-0007 found no cross-ADR semantic conflicts, no blocking defects, and required no architecture changes. M1 was frozen at commit `36317756f3b24a04bf15458b09bba2360482f7f1`. No new M1 proposal is required.
+- **H20 — M2.1 canonical source/version authority accepted.** `ADR-0008` designates `shinypapiko/project-memory-hub-skill` as the canonical future unified source repository, `skill/` as the installable Skill source subtree, root `VERSION` as canonical version identifier, the next unified line as `0.2.0-dev.0` → `0.2.0`, and one-way canonical-source → tag/release → installed-copy authority with explicit drift detection and reviewed import from predecessor local code.
 
 ## 8. Planning decisions
 
-These remain planning-level unless covered by an accepted ADR. Where a planning item overlaps `ADR-0001` through `ADR-0007`, the ADR is authoritative for the accepted architecture scope.
+These remain planning-level unless covered by an accepted ADR. Where a planning item overlaps `ADR-0001` through `ADR-0008`, the ADR is authoritative for the accepted scope.
 
 - **D-P1 — Do not build a second local-memory implementation.** Reuse/productize the existing local core.
 - **D-P2 — Keep the Hub, but narrow its proposed unified role.** Registry/routing, shared checkpoint, cross-agent/device coordination, shared trace, remote concurrency, compatibility/migration.
@@ -258,12 +266,12 @@ These remain planning-level unless covered by an accepted ADR. Where a planning 
 - **D-P10 — Remote reconciliation finalizes locally under a canonical base-pair guard.** Accepted by `ADR-0003`; remote CAS success and persistent local reconciliation are separate stages, canonical local base drift invalidates old candidates/explicit resolution context, and a newer remote head may legitimately remain ahead of `reconciled_sha`.
 - **D-P11 — Startup/sync routing is a three-path fail-closed selector.** Accepted by `ADR-0006`; fast path requires an exact trusted unchanged probe bound to current route-selection context, changed remote requires exact fetch plus ADR-0003 reconciliation, and unresolved trust/lineage/operation state routes to recovery without transport fallback or false synchronization claims.
 - **D-P12 — Resource budgets are cumulative and fail closed.** Accepted by `ADR-0007`; bounded startup/probe/checkpoint/fetch/compaction/recovery operations use cumulative logical-I/O accounting, hard limits cannot be bypassed by pagination/restart/streaming, protected semantics retain a 100% fidelity floor, and semantic compaction derivatives must re-enter ADR-0003/ADR-0005 formation rather than reuse stale candidate conclusions.
+- **D-P13 — Canonical source/version authority is one-way.** Accepted by `ADR-0008`; the canonical repository and root `VERSION` govern source/version identity, release tags bind exact commits, installed copies are derivatives, drift is explicit, and predecessor local code can enter the canonical source only through reviewed promotion.
 
-## 9. Open architecture questions
+## 9. Open architecture/implementation questions
 
-Resolve before migration/implementation:
+M1 architecture is frozen. Remaining questions belong to implementation, migration, validation, or later explicit decisions rather than new M1 proposals:
 
-- Which repository becomes the canonical source for the **future unified** Skill?
 - What reusable subset of the audited local distribution is imported first?
 - What metadata/storage representation will implement the accepted canonical `B/reconciled_sha` pair, `base_pair_token`, `observed_sha`, and exact base-content integrity checks?
 - Which concrete platform primitives satisfy `ADR-0002` on supported Windows/NTFS environments, and how will they be executable-tested?
@@ -271,7 +279,7 @@ Resolve before migration/implementation:
 - What exact milestone/shared-state trigger causes a Hub publication?
 - What privacy-classification/detection mechanism implements accepted `ADR-0005` semantics safely?
 - How does web/new-device recovery establish or recover trusted base lineage without making a merely observed remote state automatically reconciled?
-- How will later measured startup/probe/fetch/compaction evidence validate or explicitly supersede the accepted `ADR-0007` architecture defaults?
+- How will measured startup/probe/fetch/compaction evidence validate or explicitly supersede the accepted `ADR-0007` architecture defaults?
 - Do privacy-driven purge requirements need a dedicated secure-deletion model beyond ordinary preserve/archive/supersede retention?
 
 ## 10. Performance/resource targets — accepted architecture defaults, not runtime guarantees
@@ -314,18 +322,18 @@ Status values are only `DONE`, `ACTIVE`, `PLANNED`, `BLOCKED`, `DEFERRED`, `REJE
 | M1.6 | Privacy / never-publish classes | DONE | M1.2 | deterministic destination-aware P0/P1/P2/P3/UNCLASSIFIED policy, restrictive inheritance, provenance evaluation, exact-context verdict invalidation, whole-bundle preflight, safe-derivative contract, retention/purge boundary and privacy-before-CAS ordering defined; final review accepts PV1–PV16 with no blocking defects | `docs/proposals/PRIVACY_NEVER_PUBLISH_POLICY.md`; final approval; `ADR-0005` | 2026-08-27 |
 | M1.7 | Normal fast path vs recovery path | DONE | M1.2 | normal-fast, changed-remote, and recovery route selection is deterministic; exact trusted probe and route-context TOCTOU rules are explicit; base/absence/unknown-operation/degraded/no-transport-fallback behavior defined; final review accepts FP1–FP14 and closes B1 | `docs/proposals/NORMAL_FAST_CHANGED_REMOTE_RECOVERY_PATHS.md`; final approval; `ADR-0006` | 2026-08-27 |
 | M1.8 | Memory payload / compaction budgets | DONE | M1.7 | measurable token/memory/logical-I/O/payload soft/hard limits, cumulative accounting, deterministic over-budget outcomes, protected fidelity floor, and Class A/Class B compaction/reconciliation boundary defined; final review accepts MB1–MB14 and closes B1/B2 | `docs/proposals/MEMORY_PAYLOAD_COMPACTION_BUDGETS.md`; final approval; `ADR-0007` | 2026-08-27 |
-| M1.9 | Unified Architecture Proposal approved | PLANNED | M1.1–M1.8 | ADR-0001–ADR-0007 are consistency-checked and the bounded unified architecture is approved without reopening closed milestone semantics | M1.1–M1.8 accepted via `ADR-0001` / `ADR-0002` / `ADR-0003` / `ADR-0004` / `ADR-0005` / `ADR-0006` / `ADR-0007`; final unified consistency approval pending | — |
+| M1.9 | Unified Architecture Proposal approved | DONE | M1.1–M1.8 | ADR-0001–ADR-0007 are consistency-checked and the bounded unified architecture is approved without reopening closed milestone semantics | `docs/reviews/2026-08-27-unified-architecture-final-approval.md`; frozen baseline commit `36317756f3b24a04bf15458b09bba2360482f7f1` | 2026-08-27 |
 
 ### M2 — canonical source and version model
 
 | ID | Deliverable | Status | Depends on | Acceptance | Evidence | Last verified |
 | --- | --- | --- | --- | --- | --- | --- |
-| M2.1 | Decide future unified canonical source repo | PLANNED | M1.9 | repo/name/ownership/release scope explicit | current repo remains canonical only for Hub Protocol `0.1.x` | — |
+| M2.1 | Decide future unified canonical source repo/version authority | DONE | M1.9 | canonical repo/path, canonical version identifier, dev/released/installed-copy authority, commit/tag/version mapping, drift detection, and promotion direction explicit | `docs/decisions/ADR-0008-canonical-source-and-version-authority.md` | 2026-08-27 |
 | M2.2 | Import reusable local implementation without project/user data | BLOCKED | M1.9, M2.1 | reusable core appears in canonical source with privacy review | — | — |
 | M2.3 | Preserve Codex discovery metadata | BLOCKED | M2.2 | installed release remains discoverable/implicit where intended | — | — |
 | M2.4 | Port executable tests/validation | BLOCKED | M2.2 | local smoke/E2E/validation capabilities run from canonical source | — | — |
-| M2.5 | Define unified version lineage | PLANNED | M1.9 | local distribution `1.1.0` provenance and Hub `0.1.0` lineage mapped without pretending direct semver continuity | — | — |
-| M2.6 | Add independent installed-Skill version metadata and release-based install/update | PLANNED | M2.1–M2.5 | installed Skill version can be verified without relying on outer repo/tool marker | — | — |
+| M2.5 | Define unified version lineage | PLANNED | M1.9 | local distribution `1.1.0` provenance and Hub `0.1.0` lineage mapped without pretending direct semver continuity | `ADR-0008` fixes authority/mapping direction but detailed predecessor-lineage mapping remains deferred | — |
+| M2.6 | Add independent installed-Skill version metadata and release-based install/update | PLANNED | M2.1–M2.5 | installed Skill version can be verified without relying on outer repo/tool marker | `ADR-0008` fixes required authority semantics; concrete metadata/install mechanism remains deferred | — |
 
 ### M3 — Hub adapter and lazy synchronization
 
@@ -401,27 +409,32 @@ Status values are only `DONE`, `ACTIVE`, `PLANNED`, `BLOCKED`, `DEFERRED`, `REJE
 - `REJECTED` — interpret route restart/re-selection or recovery evidence gathering as synchronization success.
 - `REJECTED` — reset logical-I/O budgets through pagination, route restart, re-fetch/recompute, compaction staging, or recovery streaming.
 - `REJECTED` — silently truncate protected semantics or substitute a new candidate identity to reuse stale reconciliation/privacy conclusions under budget pressure.
-- `PAUSED` — nominal `0.2.0` implementation before the unified architecture/source model is approved.
+- `REJECTED` — treat installed or legacy development copies as peer canonical sources after `ADR-0008`.
+- `REJECTED` — reverse-promote runtime/project data into the public canonical Skill source.
 - `PAUSED` — migrate real `.ai/` trees before synthetic migration/rollback tests exist.
 
-## 13. Unified architecture acceptance criteria
+The earlier pause on nominal `0.2.0` implementation due to missing unified architecture/source authority is lifted by M1.9 + M2.1. This does not waive later migration, privacy, validation, or release gates.
 
-Implementation may begin only when:
+## 13. Unified architecture and implementation gates
 
-1. the future unified canonical source repository/release stream is explicit;
-2. each information class has one unambiguous authority role;
-3. field-level local/Hub mapping prevents silent dual authority;
-4. local and remote pre-write refresh semantics are specified;
-5. local/remote divergence has deterministic reconciliation behavior;
-6. detailed experiments/transient work are not automatically promoted;
-7. privacy / never-publish classes are explicit;
-8. normal local startup can safely skip unchanged remote full reads;
-9. web/new-device/recovery paths remain possible;
-10. executable tests cover core local behavior, routing/isolation, adapter behavior, migration, and concurrency;
-11. rollback exists;
-12. memory/token payload is measured.
+The M1 architecture gate is complete: ADR-0001–ADR-0007 are accepted and consistency-approved, and `ADR-0008` establishes canonical source/version authority.
 
-M1.1 and M1.2 satisfy the authority and field-boundary portions of these criteria through `ADR-0001`; M1.3 satisfies the local cooperative-writer safe-write architecture portion through `ADR-0002`; M1.4 satisfies the deterministic remote refresh/reconciliation architecture portion through `ADR-0003`; M1.5 satisfies the transport/Hub-adapter semantic, resource, Git transaction-domain, binding, and fallback boundary through `ADR-0004`; M1.6 satisfies deterministic privacy/classification/publication-gate architecture through `ADR-0005`; M1.7 satisfies the bounded normal-fast/changed-remote/recovery route-selection architecture through `ADR-0006`; M1.8 satisfies measurable resource-envelope, cumulative-I/O, compaction-fidelity, and semantic-derivative re-formation architecture through `ADR-0007`. The architecture-specification phase now proceeds to M1.9 consistency/approval; source/implementation/validation gates remain separate later work.
+A minimum synthetic vertical slice may now begin in the canonical repository while preserving the accepted architecture and explicit maturity labels. Full migration/release remains gated on later executable tests, rollback, compatibility, migration, and validation work.
+
+The accepted architecture provides:
+
+1. one canonical source/release authority path;
+2. one explicit authority role per information class;
+3. field-level local/Hub mapping without silent dual authority;
+4. local and remote pre-write/concurrency semantics;
+5. deterministic local/remote reconciliation behavior;
+6. local-by-default detailed evidence and explicit promotion;
+7. deterministic privacy / never-publish classes;
+8. exact-probe normal fast path with changed-remote/recovery routing;
+9. web/new-device/recovery semantics without auto-adopting observed remote state;
+10. measurable resource envelopes and fail-closed compaction/budget behavior.
+
+Executable tests, migration/rollback, and measured validation remain later gates and are not implied by M1/M2.1 governance completion.
 
 ## 14. Release gate
 
