@@ -34,6 +34,9 @@ evidence_baseline:
   - docs/proposals/PRIVACY_NEVER_PUBLISH_POLICY.md
   - docs/reviews/2026-08-27-privacy-never-publish-policy-final-approval.md
   - docs/decisions/ADR-0005-privacy-never-publish-policy.md
+  - docs/proposals/NORMAL_FAST_CHANGED_REMOTE_RECOVERY_PATHS.md
+  - docs/reviews/2026-08-27-normal-fast-changed-remote-recovery-final-approval.md
+  - docs/decisions/ADR-0006-normal-fast-changed-remote-recovery-paths.md
 ---
 
 # Project Memory Skill — History, Goals, Plan, and Status
@@ -138,7 +141,7 @@ The project is converging on **one Skill with two memory domains**, not two comp
                     +--------- reconcile --------+
 ```
 
-M1.1/M1.2 authority and field-boundary decisions are accepted in `ADR-0001`. M1.3 local multi-session safe-write semantics are accepted in `ADR-0002`. M1.4 remote refresh/reconciliation semantics are accepted in `ADR-0003`. M1.5 Hub adapter vs existing transport boundary semantics are accepted in `ADR-0004`. M1.6 deterministic privacy/classification/publication-gate semantics are accepted in `ADR-0005`. The wider unified architecture remains unreleased and incomplete: M1.7–M1.8, M1.9 final architecture approval, source/version decisions, implementation, migration, and validation still remain.
+M1.1/M1.2 authority and field-boundary decisions are accepted in `ADR-0001`. M1.3 local multi-session safe-write semantics are accepted in `ADR-0002`. M1.4 remote refresh/reconciliation semantics are accepted in `ADR-0003`. M1.5 Hub adapter vs existing transport boundary semantics are accepted in `ADR-0004`. M1.6 deterministic privacy/classification/publication-gate semantics are accepted in `ADR-0005`. M1.7 normal-fast/changed-remote/recovery route semantics are accepted in `ADR-0006`. The wider unified architecture remains unreleased and incomplete: M1.8, M1.9 final architecture approval, source/version decisions, implementation, migration, and validation still remain.
 
 The accepted ADRs do not override current released `0.1.0` Hub behavior or the current deployed local behavior until an explicit later release/migration is approved.
 
@@ -229,14 +232,15 @@ A capability may be `EXECUTABLE` but not `LIVE_VALIDATED`, or `PROTOCOL_ONLY` ye
 - **H10 — M1.3 first review.** L1/L4/L6/L10/L11/L12 were approved; L2/L3/L5/L7/L8/L9 required revision. Five blocking defects were identified around cooperative-writer scope/canonical resource identity, bounded liveness and multi-lock cleanup, Windows/atomic-install failure classification, INDEX repairability, and partial multi-resource completion. The eight required clarifications were integrated into the proposal.
 - **H11 — M1.3 final approval and ADR promotion.** Revised L1–L12 were all approved, B1–B5 were all closed, no new blocking defect was identified, and the accepted local safe-write architecture was promoted to `ADR-0002`. The future unified capability remains `PROTOCOL_ONLY` / `UNVALIDATED`; no current runtime/released behavior was changed.
 - **H12 — M1.4 remote reconciliation design started.** The first proposal separated `observed_sha` from `reconciled_sha`, defined B/R/L/C, field-level three-way classification, CAS stale recomputation, bounded contention, conflict outcomes, unknown-commit recovery, and marker-advancement rules.
-- **H13 — M1.4 initial review and clarification revision.** RR1/RR2/RR3/RR6/RR8/RR9/RR10/RR11/RR14 were approved; RR4/RR5/RR7/RR12/RR13 required revision. Four blocking defects were identified around explicit conflict resolution, canonical local base-pair drift, post-CAS/local-finalization states, and base-loss/ABSENT semantics. The proposal added a context-bound resolution operation, canonical base-pair token checks and re-projection, exact commit confirmation plus guarded local finalization, and explicit present/absent/uninitialized/invalid base states.
+- **H13 — M1.4 initial review and clarification revision.** RR1/RR2/RR3/RR6/RR8/RR9/RR10/RR11/RR14 were approved; RR4/RR5/RR7/RR12/RR13 required revision. Four blocking defects were identified around explicit conflict resolution, canonical local-base drift, post-CAS/local-finalization states, and base-loss/ABSENT handling. The proposal added a context-bound resolution operation, canonical base-pair token checks and re-projection, exact commit confirmation plus guarded local finalization, and explicit present/absent/uninitialized/invalid base states.
 - **H14 — M1.4 final approval and ADR promotion.** RR1–RR14 were all approved, B1–B4 were closed, no new blocking defect was identified, and accepted remote refresh/reconciliation semantics were promoted to `ADR-0003`. The capability remains `PROTOCOL_ONLY` / `UNVALIDATED` with `runtime_effective:false`; current runtime/released behavior remains unchanged.
 - **H15 — M1.5 boundary review and ADR promotion.** The initial review approved TB1/TB4/TB5/TB6/TB7/TB9/TB11/TB14/TB15 and required revision of TB2/TB3/TB8/TB10/TB12/TB13, identifying B1 remote resource ownership, B2 shared Git transaction domain, and B3 cross-layer project binding. The revised proposal closed B1–B3. Final review approved TB1–TB15 with no blocking defects and the accepted transport/Hub-adapter boundary was promoted to `ADR-0004`. The future adapter capability remains `PROTOCOL_ONLY` / `UNVALIDATED` with `runtime_effective:false`; no current runtime/released behavior was changed.
 - **H16 — M1.6 privacy policy final approval and ADR promotion.** Initial and final review both approved PV1–PV16 with no blocking defects or required semantic clarifications. The deterministic destination-aware privacy/classification/publication-gate semantics were promoted to `ADR-0005`. The capability remains `PROTOCOL_ONLY` / `UNVALIDATED` with `runtime_effective:false`; M1.6 `DONE` does not imply runtime implementation, migration, or validation.
+- **H17 — M1.7 route-selection final approval and ADR promotion.** Initial review approved FP4–FP14 and identified one blocker, B1 route-selection context TOCTOU, affecting FP1–FP3. One bounded clarification added `route_selection_context`, pre-adoption authoritative-context revalidation, and discard/restart on drift. Final review approved FP1–FP14, closed B1, and promoted the three-path routing semantics to `ADR-0006`. The capability remains `PROTOCOL_ONLY` / `UNVALIDATED` with `runtime_effective:false`; M1.7 `DONE` does not imply probe, adapter, recovery runtime, migration, or validation.
 
 ## 8. Planning decisions
 
-These remain planning-level unless covered by an accepted ADR. Where a planning item overlaps `ADR-0001`, `ADR-0002`, `ADR-0003`, `ADR-0004`, or `ADR-0005`, the ADR is authoritative for the accepted architecture scope.
+These remain planning-level unless covered by an accepted ADR. Where a planning item overlaps `ADR-0001` through `ADR-0006`, the ADR is authoritative for the accepted architecture scope.
 
 - **D-P1 — Do not build a second local-memory implementation.** Reuse/productize the existing local core.
 - **D-P2 — Keep the Hub, but narrow its proposed unified role.** Registry/routing, shared checkpoint, cross-agent/device coordination, shared trace, remote concurrency, compatibility/migration.
@@ -248,6 +252,7 @@ These remain planning-level unless covered by an accepted ADR. Where a planning 
 - **D-P8 — Local no-lost-update is a cooperative-writer contract.** Accepted by `ADR-0002`; the target uses canonical resource identity, exact base hashes, short commit locks, atomic replace/no-replace install, bounded retry, and structured partial/unknown commit results; direct writers that bypass the helper are outside the mutual-exclusion guarantee.
 - **D-P9 — Remote observation and reconciliation are distinct.** Accepted by `ADR-0003`; observing a newer remote SHA never by itself advances the reconciled base, and stale CAS invalidates the old candidate and forces fresh fetch plus B/R/L recomputation.
 - **D-P10 — Remote reconciliation finalizes locally under a canonical base-pair guard.** Accepted by `ADR-0003`; remote CAS success and persistent local reconciliation are separate stages, canonical local base drift invalidates old candidates/explicit resolution context, and a newer remote head may legitimately remain ahead of `reconciled_sha`.
+- **D-P11 — Startup/sync routing is a three-path fail-closed selector.** Accepted by `ADR-0006`; fast path requires an exact trusted unchanged probe bound to current route-selection context, changed remote requires exact fetch plus ADR-0003 reconciliation, and unresolved trust/lineage/operation state routes to recovery without transport fallback or false synchronization claims.
 
 ## 9. Open architecture questions
 
@@ -296,9 +301,9 @@ Status values are only `DONE`, `ACTIVE`, `PLANNED`, `BLOCKED`, `DEFERRED`, `REJE
 | M1.4 | Unified remote refresh/reconcile semantics | DONE | M1.2 | deterministic B/R/L/C state machine defines observed vs reconciled SHA, canonical local base drift, explicit conflict resolution, CAS stale recomputation, bounded contention, exact remote confirmation, guarded local finalization, conflict/unknown-commit outcomes, base-loss/ABSENT handling, and exact marker-advancement rules; final review accepts revised RR1–RR14 | `docs/proposals/REMOTE_REFRESH_RECONCILIATION_STATE_MACHINE.md`; initial review; final approval; `ADR-0003` | 2026-08-27 |
 | M1.5 | Hub adapter vs transport boundary | DONE | M0.6 | transport/adapter semantic ownership, remote resource classes, shared Git transaction-domain isolation, cross-layer canonical binding checks, typed result/fallback boundaries and compatibility lifecycle defined; final review accepts TB1–TB15 and closes B1–B3 | `docs/proposals/HUB_ADAPTER_TRANSPORT_BOUNDARY.md`; final approval; `ADR-0004` | 2026-08-27 |
 | M1.6 | Privacy / never-publish classes | DONE | M1.2 | deterministic destination-aware P0/P1/P2/P3/UNCLASSIFIED policy, restrictive inheritance, provenance evaluation, exact-context verdict invalidation, whole-bundle preflight, safe-derivative contract, retention/purge boundary and privacy-before-CAS ordering defined; final review accepts PV1–PV16 with no blocking defects | `docs/proposals/PRIVACY_NEVER_PUBLISH_POLICY.md`; final approval; `ADR-0005` | 2026-08-27 |
-| M1.7 | Normal fast path vs recovery path | PLANNED | M1.2 | conditions and fallbacks explicit | — | — |
+| M1.7 | Normal fast path vs recovery path | DONE | M1.2 | normal-fast, changed-remote, and recovery route selection is deterministic; exact trusted probe and route-context TOCTOU rules are explicit; base/absence/unknown-operation/degraded/no-transport-fallback behavior defined; final review accepts FP1–FP14 and closes B1 | `docs/proposals/NORMAL_FAST_CHANGED_REMOTE_RECOVERY_PATHS.md`; final approval; `ADR-0006` | 2026-08-27 |
 | M1.8 | Memory payload / compaction budgets | PLANNED | M1.7 | measurable budgets and thresholds defined | — | — |
-| M1.9 | Unified Architecture Proposal approved | BLOCKED | M1.1–M1.8 | approved ADR/spec before source migration | M1.1–M1.6 accepted via `ADR-0001` / `ADR-0002` / `ADR-0003` / `ADR-0004` / `ADR-0005`; M1.7–M1.8 pending | — |
+| M1.9 | Unified Architecture Proposal approved | BLOCKED | M1.1–M1.8 | approved ADR/spec before source migration | M1.1–M1.7 accepted via `ADR-0001` / `ADR-0002` / `ADR-0003` / `ADR-0004` / `ADR-0005` / `ADR-0006`; M1.8 pending | — |
 
 ### M2 — canonical source and version model
 
@@ -381,6 +386,8 @@ Status values are only `DONE`, `ACTIVE`, `PLANNED`, `BLOCKED`, `DEFERRED`, `REJE
 - `REJECTED` — reinterpret transport mailbox/receipt/snapshot state as Hub adapter reconciliation state.
 - `REJECTED` — assume separate semantic namespaces isolate shared Git index/HEAD/ref/staging/commit/push state.
 - `REJECTED` — infer canonical project identity from transport config, path/channel similarity, or physical co-location.
+- `REJECTED` — use stale route/probe evidence after canonical binding/base/schema/capability/recovery-state drift.
+- `REJECTED` — interpret route restart/re-selection or recovery evidence gathering as synchronization success.
 - `PAUSED` — nominal `0.2.0` implementation before the unified architecture/source model is approved.
 - `PAUSED` — migrate real `.ai/` trees before synthetic migration/rollback tests exist.
 
@@ -401,7 +408,7 @@ Implementation may begin only when:
 11. rollback exists;
 12. memory/token payload is measured.
 
-M1.1 and M1.2 satisfy the authority and field-boundary portions of these criteria through `ADR-0001`; M1.3 satisfies the local cooperative-writer safe-write architecture portion through `ADR-0002`; M1.4 satisfies the deterministic remote refresh/reconciliation architecture portion through `ADR-0003`; M1.5 satisfies the transport/Hub-adapter semantic, resource, Git transaction-domain, binding, and fallback boundary through `ADR-0004`; M1.6 satisfies deterministic privacy/classification/publication-gate architecture through `ADR-0005`. The overall architecture gate remains open until M1.7–M1.8 and the later source/implementation/validation requirements are complete.
+M1.1 and M1.2 satisfy the authority and field-boundary portions of these criteria through `ADR-0001`; M1.3 satisfies the local cooperative-writer safe-write architecture portion through `ADR-0002`; M1.4 satisfies the deterministic remote refresh/reconciliation architecture portion through `ADR-0003`; M1.5 satisfies the transport/Hub-adapter semantic, resource, Git transaction-domain, binding, and fallback boundary through `ADR-0004`; M1.6 satisfies deterministic privacy/classification/publication-gate architecture through `ADR-0005`; M1.7 satisfies the bounded normal-fast/changed-remote/recovery route-selection architecture through `ADR-0006`. The overall architecture gate remains open until M1.8 and M1.9 plus later source/implementation/validation requirements are complete.
 
 ## 14. Release gate
 
